@@ -291,7 +291,14 @@
   }
   .problem-img-placeholder .big { font-size: 28px; }
 
-  .problem-card-body { padding: 12px; }
+  .problem-card-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-top: 0.5px solid var(--border);
+    background: var(--surface2);
+  }
+  .problem-card-actions .btn { flex: 1; font-size: 11px; padding: 4px 8px; }
   .problem-card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
   .problem-card-meta { display: flex; flex-wrap: wrap; gap: 4px; }
 
@@ -870,32 +877,45 @@
         <div class="topbar-title">📄 PDF 자동 분리</div>
       </div>
       <div class="content">
-        <div class="card" style="max-width:600px;">
-          <h3 style="font-size:15px;margin-bottom:6px;">문제집 PDF 업로드</h3>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:20px;">PDF를 업로드하면 Claude가 문제별로 자동 분리합니다. 결과를 확인하고 수정 후 승인할 수 있어요.</p>
-          <div class="upload-zone" onclick="document.getElementById('pdfFileInput').click()" id="pdfUploadZone">
-            <div class="icon">📄</div>
-            <p>PDF 파일을 클릭하거나 드래그해서 업로드</p>
-            <p style="font-size:12px;color:var(--text3);margin-top:4px;">최대 50MB</p>
+        <div class="card" style="max-width:700px;">
+          <h3 style="font-size:15px;margin-bottom:6px;">PDF 페이지 업로드</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">PDF 페이지를 이미지로 업로드하면 문제 영역을 직접 드래그해서 잘라낼 수 있어요.</p>
+          <div class="upload-zone" onclick="document.getElementById('pdfPageInput').click()" id="pdfPageUploadZone">
+            <div class="icon">🖼️</div>
+            <p>PDF 페이지 이미지 업로드 (스크린샷 또는 JPG/PNG)</p>
+            <p style="font-size:12px;color:var(--text3);margin-top:4px;">한 번에 여러 페이지 가능</p>
           </div>
-          <input type="file" id="pdfFileInput" accept=".pdf" style="display:none" onchange="handlePdfUpload(this)">
-          <div id="pdfProcessing" style="display:none;margin-top:16px;">
-            <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--accent-light);border-radius:var(--radius);">
-              <span style="animation:spin 1s linear infinite;display:inline-block;">⏳</span>
-              <span style="font-size:13px;color:var(--accent);">Claude가 문제를 분석하고 있어요...</span>
-            </div>
-          </div>
+          <input type="file" id="pdfPageInput" accept="image/*" multiple style="display:none" onchange="handlePdfPageUpload(this)">
         </div>
 
-        <div id="pdfReviewArea" style="display:none;margin-top:24px;">
+        <!-- 크롭 작업 영역 -->
+        <div id="cropWorkArea" style="display:none;margin-top:24px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h3 style="font-size:15px;">분리 결과 확인 및 수정</h3>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-secondary btn-sm" onclick="cancelPdfReview()">취소</button>
-              <button class="btn btn-primary btn-sm" onclick="approvePdfProblems()">전체 승인하고 DB에 추가</button>
+            <div>
+              <h3 style="font-size:15px;margin-bottom:4px;">문제 영역 선택</h3>
+              <p style="font-size:13px;color:var(--text2);">드래그로 문제 영역을 선택하세요. 선택 후 저장 버튼을 누르면 DB에 추가돼요.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="cropPageInfo" style="font-size:13px;color:var(--text2);"></span>
+              <button class="btn btn-secondary btn-sm" onclick="prevCropPage()">◀ 이전</button>
+              <button class="btn btn-secondary btn-sm" onclick="nextCropPage()">다음 ▶</button>
             </div>
           </div>
-          <div id="pdfReviewList" class="pdf-review-list"></div>
+
+          <div style="display:flex;gap:20px;align-items:flex-start;">
+            <!-- 캔버스 영역 -->
+            <div style="flex:1;position:relative;">
+              <canvas id="cropCanvas" style="border:1px solid var(--border);border-radius:var(--radius);cursor:crosshair;max-width:100%;display:block;"></canvas>
+              <div id="cropSelection" style="position:absolute;border:2px solid var(--accent);background:rgba(45,90,61,0.1);pointer-events:none;display:none;"></div>
+            </div>
+
+            <!-- 크롭 목록 -->
+            <div style="width:200px;flex-shrink:0;">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">잘라낸 문제들</div>
+              <div id="cropList" style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;"></div>
+              <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px;" onclick="approveAllCrops()">전체 DB에 추가</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1019,21 +1039,41 @@
             autocomplete="off">
           <div class="combo-dropdown" id="m_subject_dropdown"></div>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position:relative;">
           <label class="form-label">교재명</label>
-          <input class="form-input" id="m_book" type="text" placeholder="개념원리, 올림포스 등">
+          <input class="form-input" id="m_book" type="text" placeholder="개념원리, 올림포스 등"
+            onfocus="showCombo('m_book','book')"
+            oninput="showCombo('m_book','book')"
+            onblur="hideCombo('m_book_dropdown')"
+            autocomplete="off">
+          <div class="combo-dropdown" id="m_book_dropdown"></div>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position:relative;">
           <label class="form-label">대단원</label>
-          <input class="form-input" id="m_unit1" type="text" placeholder="예: 수와 연산">
+          <input class="form-input" id="m_unit1" type="text" placeholder="예: 수와 연산"
+            onfocus="showCombo('m_unit1','unit1')"
+            oninput="showCombo('m_unit1','unit1')"
+            onblur="hideCombo('m_unit1_dropdown')"
+            autocomplete="off">
+          <div class="combo-dropdown" id="m_unit1_dropdown"></div>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position:relative;">
           <label class="form-label">중단원</label>
-          <input class="form-input" id="m_unit2" type="text" placeholder="예: 수열">
+          <input class="form-input" id="m_unit2" type="text" placeholder="예: 수열"
+            onfocus="showCombo('m_unit2','unit2')"
+            oninput="showCombo('m_unit2','unit2')"
+            onblur="hideCombo('m_unit2_dropdown')"
+            autocomplete="off">
+          <div class="combo-dropdown" id="m_unit2_dropdown"></div>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position:relative;">
           <label class="form-label">소단원</label>
-          <input class="form-input" id="m_unit3" type="text" placeholder="예: 등차수열">
+          <input class="form-input" id="m_unit3" type="text" placeholder="예: 등차수열"
+            onfocus="showCombo('m_unit3','unit3')"
+            oninput="showCombo('m_unit3','unit3')"
+            onblur="hideCombo('m_unit3_dropdown')"
+            autocomplete="off">
+          <div class="combo-dropdown" id="m_unit3_dropdown"></div>
         </div>
         <div class="form-group">
           <label class="form-label">
@@ -1045,15 +1085,21 @@
           </label>
           <input class="form-input" id="m_num" type="number" value="1" min="1">
         </div>
-        <div class="form-group span2">
-          <label class="form-label">난이도</label>
-          <div class="diff-options">
-            <div class="diff-opt d1 active" onclick="setDiff(1,this)">⭐ 하</div>
-            <div class="diff-opt d2" onclick="setDiff(2,this)">⭐⭐ 중하</div>
-            <div class="diff-opt d3" onclick="setDiff(3,this)">⭐⭐⭐ 중</div>
-            <div class="diff-opt d4" onclick="setDiff(4,this)">⭐⭐⭐⭐ 중상</div>
-            <div class="diff-opt d5" onclick="setDiff(5,this)">⭐⭐⭐⭐⭐ 상</div>
-          </div>
+        <div class="form-group span2" style="position:relative;">
+          <label class="form-label">
+            난이도
+            <span style="float:right;display:flex;align-items:center;gap:5px;">
+              <span class="toggle-label" style="font-size:11px;">표시 안함</span>
+              <div class="toggle" id="diffHideToggle" onclick="toggleDiffHide()"></div>
+            </span>
+          </label>
+          <input class="form-input" id="m_diff_text" type="text" placeholder="예: 상, 중, 하, ★★★, 난이도3 등 자유롭게 입력"
+            onfocus="showCombo('m_diff_text','diff')"
+            oninput="showCombo('m_diff_text','diff')"
+            onblur="hideCombo('m_diff_text_dropdown')"
+            autocomplete="off" style="font-size:13px;">
+          <div class="combo-dropdown" id="m_diff_text_dropdown"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">비워두면 난이도 미표시</div>
         </div>
       </div>
 
@@ -1062,9 +1108,11 @@
       <!-- File uploads -->
       <div class="upload-section">
         <div class="upload-section-label">📝 문제 이미지</div>
-        <div class="upload-zone" onclick="triggerUpload('q_img')" id="qZone">
+        <div class="upload-zone paste-zone" id="qZone" onclick="triggerUpload('q_img')" tabindex="0"
+          style="outline:none;">
           <div class="icon">🖼️</div>
-          <p>문제 이미지 업로드 (JPG, PNG)</p>
+          <p>클릭하거나 <strong>Cmd+V</strong>로 붙여넣기</p>
+          <p style="font-size:11px;color:var(--text3);margin-top:2px;">Acrobat 스냅샷 → 이 칸 클릭 → Cmd+V</p>
         </div>
         <input type="file" id="q_img" accept="image/*" style="display:none" onchange="previewUpload('q_img','qPreview','qZone')">
         <div id="qPreview"></div>
@@ -1077,9 +1125,10 @@
 
       <div class="upload-section">
         <div class="upload-section-label">✅ 정답</div>
-        <div class="upload-zone" onclick="triggerUpload('a_img')" id="aZone">
+        <div class="upload-zone paste-zone" id="aZone" onclick="triggerUpload('a_img')" tabindex="0"
+          style="outline:none;">
           <div class="icon">🖼️</div>
-          <p>정답 이미지 업로드 (JPG, PNG)</p>
+          <p>클릭하거나 <strong>Cmd+V</strong>로 붙여넣기</p>
         </div>
         <input type="file" id="a_img" accept="image/*" style="display:none" onchange="previewUpload('a_img','aPreview','aZone')">
         <div id="aPreview"></div>
@@ -1090,37 +1139,36 @@
       </div>
 
       <div class="upload-section">
-        <div class="upload-section-label">💡 해설 <span style="font-size:11px;font-weight:400;color:var(--text3);">— 이미지 여러 장 업로드 가능</span></div>
-        <!-- 해설 이미지 슬롯 3개 -->
+        <div class="upload-section-label">💡 해설 <span style="font-size:11px;font-weight:400;color:var(--text3);">— 이미지 여러 장 가능</span></div>
         <div id="solSlotsWrap" style="display:flex;flex-direction:column;gap:8px;">
           <div class="sol-slot" data-idx="0">
-            <div class="upload-zone sol-zone" onclick="triggerSolUpload(0)" id="sZone0">
+            <div class="upload-zone sol-zone paste-zone" onclick="triggerSolUpload(0)" id="sZone0" tabindex="0" style="outline:none;">
               <div class="icon">🖼️</div>
-              <p>해설 이미지 1</p>
+              <p>해설 이미지 1 — 클릭 또는 <strong>Cmd+V</strong></p>
             </div>
             <input type="file" id="s_img_0" accept="image/*" style="display:none" onchange="previewSolUpload(0)">
             <div class="sol-preview" id="sPreview0"></div>
           </div>
           <div class="sol-slot" data-idx="1" id="sSlot1" style="display:none;">
-            <div class="upload-zone sol-zone" onclick="triggerSolUpload(1)" id="sZone1">
+            <div class="upload-zone sol-zone paste-zone" onclick="triggerSolUpload(1)" id="sZone1" tabindex="0" style="outline:none;">
               <div class="icon">🖼️</div>
-              <p>해설 이미지 2</p>
+              <p>해설 이미지 2 — 클릭 또는 <strong>Cmd+V</strong></p>
             </div>
             <input type="file" id="s_img_1" accept="image/*" style="display:none" onchange="previewSolUpload(1)">
             <div class="sol-preview" id="sPreview1"></div>
           </div>
           <div class="sol-slot" data-idx="2" id="sSlot2" style="display:none;">
-            <div class="upload-zone sol-zone" onclick="triggerSolUpload(2)" id="sZone2">
+            <div class="upload-zone sol-zone paste-zone" onclick="triggerSolUpload(2)" id="sZone2" tabindex="0" style="outline:none;">
               <div class="icon">🖼️</div>
-              <p>해설 이미지 3</p>
+              <p>해설 이미지 3 — 클릭 또는 <strong>Cmd+V</strong></p>
             </div>
             <input type="file" id="s_img_2" accept="image/*" style="display:none" onchange="previewSolUpload(2)">
             <div class="sol-preview" id="sPreview2"></div>
           </div>
           <div class="sol-slot" data-idx="3" id="sSlot3" style="display:none;">
-            <div class="upload-zone sol-zone" onclick="triggerSolUpload(3)" id="sZone3">
+            <div class="upload-zone sol-zone paste-zone" onclick="triggerSolUpload(3)" id="sZone3" tabindex="0" style="outline:none;">
               <div class="icon">🖼️</div>
-              <p>해설 이미지 4</p>
+              <p>해설 이미지 4 — 클릭 또는 <strong>Cmd+V</strong></p>
             </div>
             <input type="file" id="s_img_3" accept="image/*" style="display:none" onchange="previewSolUpload(3)">
             <div class="sol-preview" id="sPreview3"></div>
@@ -1247,18 +1295,24 @@ function renderProblemGrid(list) {
   if (arr.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   grid.innerHTML = arr.map(p => `
-    <div class="problem-card ${selectedProblems.has(p.id) ? 'selected' : ''}" onclick="toggleSelect(${p.id})">
-      <div class="problem-card-check">${selectedProblems.has(p.id) ? '✓' : ''}</div>
-      <div class="problem-img-wrap">
-        ${p.qImg ? `<img src="${p.qImg}" alt="문제">` : `<div class="problem-img-placeholder"><span class="big">📝</span><span>${p.subject} ${p.num}번</span></div>`}
-      </div>
-      <div class="problem-card-body">
-        <div class="problem-card-title">${p.book} · ${p.unit2 || p.unit1} · ${p.num}번</div>
-        <div class="problem-card-meta">
-          <span class="badge badge-green">${p.subject}</span>
-          <span class="badge badge-gray">${p.unit3 || p.unit2}</span>
-          <span class="badge ${getDiffBadge(p.diff)}">${getDiffLabel(p.diff)}</span>
+    <div class="problem-card ${selectedProblems.has(p.id) ? 'selected' : ''}">
+      <div onclick="toggleSelect(${JSON.stringify(p.id)})" style="cursor:pointer;">
+        <div class="problem-card-check">${selectedProblems.has(p.id) ? '✓' : ''}</div>
+        <div class="problem-img-wrap">
+          ${p.qImg ? `<img src="${p.qImg}" alt="문제">` : `<div class="problem-img-placeholder"><span class="big">📝</span><span>${p.subject || ''} ${p.num || ''}번</span></div>`}
         </div>
+        <div class="problem-card-body">
+          <div class="problem-card-title">${p.book || ''} · ${p.unit2 || p.unit1 || ''} · ${p.num || ''}번</div>
+          <div class="problem-card-meta">
+            ${p.subject ? `<span class="badge badge-green">${p.subject}</span>` : ''}
+            ${p.unit3 || p.unit2 ? `<span class="badge badge-gray">${p.unit3 || p.unit2}</span>` : ''}
+            ${p.diff ? `<span class="badge ${getDiffBadge(p.diff)}">${getDiffLabel(p.diff)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="problem-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editProblem(${JSON.stringify(p.id)})">✏️ 수정</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProblem(${JSON.stringify(p.id)})">🗑️ 삭제</button>
       </div>
     </div>
   `).join('');
@@ -1266,26 +1320,79 @@ function renderProblemGrid(list) {
 }
 
 function getDiffBadge(d) {
-  return ['','badge-green','badge-blue','badge-gray','badge-orange','badge-red'][d] || 'badge-gray';
+  if (!d) return 'badge-gray';
+  const s = String(d).toLowerCase();
+  if (s.includes('상')) return 'badge-red';
+  if (s.includes('중상')) return 'badge-orange';
+  if (s.includes('중하')) return 'badge-blue';
+  if (s.includes('중')) return 'badge-gray';
+  if (s.includes('하')) return 'badge-green';
+  return 'badge-gray';
 }
 function getDiffLabel(d) {
-  return ['','하','중하','중','중상','상'][d] || '중';
+  return d || '';
 }
 
-function toggleSelect(id) {
-  if (selectedProblems.has(id)) selectedProblems.delete(id);
-  else selectedProblems.add(id);
+let editingProblemId = null;
+
+function editProblem(id) {
+  const p = problems.find(x => x.id === id);
+  if (!p) return;
+  editingProblemId = id;
+  openUploadModal();
+  // 기존 데이터로 필드 채우기
+  setTimeout(() => {
+    document.getElementById('m_subject').value = p.subject || '';
+    document.getElementById('m_book').value = p.book || '';
+    document.getElementById('m_unit1').value = p.unit1 || '';
+    document.getElementById('m_unit2').value = p.unit2 || '';
+    document.getElementById('m_unit3').value = p.unit3 || '';
+    document.getElementById('m_num').value = p.num || 1;
+    document.getElementById('m_diff_text').value = p.diff || '';
+    document.getElementById('m_answer_text').value = p.answer || '';
+    document.getElementById('m_sol_text').value = p.solution || '';
+    // 이미지 미리보기
+    if (p.qImg) {
+      uploadedImages.q = p.qImg;
+      document.getElementById('qPreview').innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${p.qImg}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="removePreview('q_img','qPreview','qZone')">×</div></div>`;
+      document.getElementById('qZone').style.display = 'none';
+      document.getElementById('qScale').style.display = 'flex';
+    }
+    if (p.aImg) {
+      uploadedImages.a = p.aImg;
+      document.getElementById('aPreview').innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${p.aImg}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="removePreview('a_img','aPreview','aZone')">×</div></div>`;
+      document.getElementById('aZone').style.display = 'none';
+    }
+    // 모달 제목 변경
+    document.querySelector('#uploadModal .modal-header h2').textContent = '문제 수정';
+  }, 50);
+}
+
+function deleteProblem(id) {
+  if (!confirm('이 문제를 삭제할까요?')) return;
+  const p = problems.find(x => x.id === id);
+  // 노션에서도 삭제
+  if (p && p.notionId) notionCall('deleteProblem', { id: p.notionId });
+  problems = problems.filter(x => x.id !== id);
+  selectedProblems.delete(id);
+  localStorage.setItem('problems', JSON.stringify(problems));
   renderProblemGrid();
+  showToast('삭제됐어요');
 }
 
 // ===== 콤보박스 드롭다운 =====
 const comboFieldMap = {
-  af_subject: { key: 'subject', label: '과목' },
-  m_subject:  { key: 'subject', label: '과목' },
-  af_book:    { key: 'book',    label: '교재명' },
-  af_unit1:   { key: 'unit1',   label: '대단원' },
-  af_unit2:   { key: 'unit2',   label: '중단원' },
-  af_unit3:   { key: 'unit3',   label: '소단원' },
+  af_subject:     { key: 'subject', label: '과목' },
+  m_subject:      { key: 'subject', label: '과목' },
+  af_book:        { key: 'book',    label: '교재명' },
+  m_book:         { key: 'book',    label: '교재명' },
+  af_unit1:       { key: 'unit1',   label: '대단원' },
+  m_unit1:        { key: 'unit1',   label: '대단원' },
+  af_unit2:       { key: 'unit2',   label: '중단원' },
+  m_unit2:        { key: 'unit2',   label: '중단원' },
+  af_unit3:       { key: 'unit3',   label: '소단원' },
+  m_unit3:        { key: 'unit3',   label: '소단원' },
+  m_diff_text:    { key: 'diff',    label: '난이도' },
 };
 
 function getUniqueValues(key) {
@@ -1439,8 +1546,10 @@ function openUploadModal() {
   document.getElementById('qPreview').innerHTML = '';
   document.getElementById('aPreview').innerHTML = '';
   document.getElementById('aZone').style.display = 'block';
-  document.getElementById('qScale').style.display = 'none';
-  document.getElementById('qZone').style.display = 'block';
+  document.getElementById('m_diff_text').value = '';
+  document.getElementById('m_diff_text').disabled = false;
+  document.getElementById('m_diff_text').style.opacity = '1';
+  document.getElementById('diffHideToggle').classList.remove('on');
   document.getElementById('m_answer_text').value = '';
   document.getElementById('m_sol_text').value = '';
   // 해설 슬롯 초기화
@@ -1463,6 +1572,8 @@ function openUploadModal() {
 
 function closeUploadModal() {
   document.getElementById('uploadModal').classList.remove('open');
+  editingProblemId = null;
+  document.querySelector('#uploadModal .modal-header h2').textContent = '문제 추가';
 }
 
 function triggerUpload(id) { document.getElementById(id).click(); }
@@ -1529,10 +1640,22 @@ function addSolSlot() {
   if (solSlotCount >= 4) document.getElementById('addSolBtn').style.display = 'none';
 }
 
-function setDiff(d, el) {
-  currentDiff = d;
-  document.querySelectorAll('.diff-opt').forEach(e => e.classList.remove('active'));
-  el.classList.add('active');
+function toggleDiffHide() {
+  const t = document.getElementById('diffHideToggle');
+  const input = document.getElementById('m_diff_text');
+  const isHide = !t.classList.contains('on');
+  if (isHide) {
+    t.classList.add('on');
+    input.value = '';
+    input.disabled = true;
+    input.placeholder = '난이도 표시 안함';
+    input.style.opacity = '0.4';
+  } else {
+    t.classList.remove('on');
+    input.disabled = false;
+    input.placeholder = '예: 상, 중, 하, ★★★, 난이도3 등 자유롭게 입력';
+    input.style.opacity = '1';
+  }
 }
 
 function setSize(s, el) {
@@ -1556,7 +1679,7 @@ function buildProblem() {
     unit2: document.getElementById('m_unit2').value,
     unit3: document.getElementById('m_unit3').value,
     num: parseInt(document.getElementById('m_num').value),
-    diff: currentDiff,
+    diff: document.getElementById('m_diff_text').value.trim() || '',
     answer: document.getElementById('m_answer_text').value,
     solution: document.getElementById('m_sol_text').value,
     qImg: uploadedImages.q,
@@ -1573,14 +1696,26 @@ function saveStickyMeta(p) {
 
 function saveProblem() {
   const p = buildProblem();
-  problems.push(p);
+  if (editingProblemId !== null) {
+    // 수정 모드
+    const idx = problems.findIndex(x => x.id === editingProblemId);
+    if (idx !== -1) {
+      p.id = editingProblemId;
+      p.notionId = problems[idx].notionId;
+      problems[idx] = p;
+    }
+    editingProblemId = null;
+    document.querySelector('#uploadModal .modal-header h2').textContent = '문제 추가';
+    showToast('문제가 수정됐어요 ✓');
+  } else {
+    problems.push(p);
+    showToast('문제가 저장됐어요 ✓');
+    saveProblemToNotion(p);
+  }
   localStorage.setItem('problems', JSON.stringify(problems));
   saveStickyMeta(p);
   closeUploadModal();
   renderProblemGrid();
-  showToast('문제가 저장되었어요 ✓');
-  // 노션에도 저장
-  saveProblemToNotion(p);
 }
 
 function saveAndNext() {
@@ -1669,9 +1804,11 @@ function renderEditorCells() {
       cell.innerHTML = `
         <div class="cell-problem">
           <div class="cell-problem-img">
-            ${p.qImg ? `<img src="${p.qImg}" style="transform:scale(1)">` : `<div style="text-align:center;color:var(--text3);font-size:11px;padding:8px;">${p.subject} ${p.num}번<br><span style="font-size:9px;">${p.book} · ${p.unit2||p.unit1}</span></div>`}
+            ${p.qImg
+              ? `<img src="${p.qImg}" style="width:100%;height:100%;object-fit:contain;">`
+              : `<div style="text-align:center;color:var(--text3);font-size:11px;padding:8px;">이미지 없음</div>`
+            }
           </div>
-          <div class="cell-problem-meta">${p.num}번 · ${getDiffLabel(p.diff)}</div>
         </div>
         <div class="cell-remove" onclick="removeCell(${i})">×</div>`;
     } else {
@@ -1712,8 +1849,11 @@ function renderAnswerSheet() {
   if (filled.length === 0) { grid.innerHTML = ''; return; }
   grid.innerHTML = filled.map(p => `
     <div class="answer-item">
-      <div class="answer-num">${p.num}번</div>
-      <div class="answer-val">${p.answer || '—'}</div>
+      ${p.aImg
+        ? `<img src="${p.aImg}" style="max-width:100%;max-height:80px;object-fit:contain;">`
+        : `<div class="answer-num" style="font-size:10px;color:var(--text3);">${p.num}번</div>
+           <div class="answer-val">${p.answer || '—'}</div>`
+      }
     </div>
   `).join('');
 }
@@ -1937,6 +2077,205 @@ async function sendToNotion() {
   }
 }
 
+// ===== 클립보드 붙여넣기 (Cmd+V) =====
+function setupPasteZones() {
+  document.addEventListener('paste', (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const src = ev.target.result;
+          // 어떤 칸이 포커스/활성화 되어 있는지 확인
+          const active = document.activeElement;
+          if (active && active.classList.contains('paste-zone')) {
+            const zoneId = active.id;
+            if (zoneId === 'qZone') {
+              uploadedImages.q = src;
+              document.getElementById('qPreview').innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="removePreview('q_img','qPreview','qZone')">×</div></div>`;
+              document.getElementById('qZone').style.display = 'none';
+              document.getElementById('qScale').style.display = 'flex';
+              showToast('문제 이미지가 붙여넣어졌어요 ✓');
+            } else if (zoneId === 'aZone') {
+              uploadedImages.a = src;
+              document.getElementById('aPreview').innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="removePreview('a_img','aPreview','aZone')">×</div></div>`;
+              document.getElementById('aZone').style.display = 'none';
+              showToast('정답 이미지가 붙여넣어졌어요 ✓');
+            } else if (zoneId && zoneId.startsWith('sZone')) {
+              const idx = parseInt(zoneId.replace('sZone',''));
+              uploadedImages.sArr[idx] = src;
+              document.getElementById('sPreview'+idx).innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="removeSolPreview(${idx})">×</div></div>`;
+              document.getElementById('sZone'+idx).style.display = 'none';
+              if (idx + 1 < 4 && idx + 1 >= solSlotCount) addSolSlot();
+              showToast(`해설 이미지 ${idx+1}이 붙여넣어졌어요 ✓`);
+            }
+          } else {
+            // 포커스된 칸이 없으면 문제 이미지에 기본 적용
+            if (!uploadedImages.q) {
+              uploadedImages.q = src;
+              document.getElementById('qPreview').innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="removePreview('q_img','qPreview','qZone')">×</div></div>`;
+              document.getElementById('qZone').style.display = 'none';
+              document.getElementById('qScale').style.display = 'flex';
+              showToast('문제 이미지가 붙여넣어졌어요 ✓');
+            }
+          }
+        };
+        reader.readAsDataURL(file);
+        break;
+      }
+    }
+  });
+}
+
+// ===== PDF 페이지 이미지 크롭 =====
+let cropPages = [];
+let currentCropPage = 0;
+let cropCanvas, cropCtx, cropImg;
+let isDrawing = false, startX, startY, currentX, currentY;
+let croppedItems = [];
+
+function handlePdfPageUpload(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  cropPages = [];
+  croppedItems = [];
+  document.getElementById('cropList').innerHTML = '';
+
+  let loaded = 0;
+  files.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      cropPages[i] = e.target.result;
+      loaded++;
+      if (loaded === files.length) {
+        currentCropPage = 0;
+        document.getElementById('cropWorkArea').style.display = 'block';
+        loadCropPage(0);
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function loadCropPage(idx) {
+  cropCanvas = document.getElementById('cropCanvas');
+  cropCtx = cropCanvas.getContext('2d');
+  cropImg = new Image();
+  cropImg.onload = () => {
+    const maxW = cropCanvas.parentElement.clientWidth - 10;
+    const scale = Math.min(1, maxW / cropImg.width);
+    cropCanvas.width = cropImg.width * scale;
+    cropCanvas.height = cropImg.height * scale;
+    cropCtx.drawImage(cropImg, 0, 0, cropCanvas.width, cropCanvas.height);
+  };
+  cropImg.src = cropPages[idx];
+  document.getElementById('cropPageInfo').textContent = `${idx+1} / ${cropPages.length} 페이지`;
+  document.getElementById('cropSelection').style.display = 'none';
+
+  // 마우스 이벤트
+  cropCanvas.onmousedown = startCrop;
+  cropCanvas.onmousemove = drawCrop;
+  cropCanvas.onmouseup = endCrop;
+}
+
+function startCrop(e) {
+  const rect = cropCanvas.getBoundingClientRect();
+  startX = e.clientX - rect.left;
+  startY = e.clientY - rect.top;
+  isDrawing = true;
+  const sel = document.getElementById('cropSelection');
+  sel.style.display = 'block';
+  sel.style.left = startX + 'px';
+  sel.style.top = startY + 'px';
+  sel.style.width = '0';
+  sel.style.height = '0';
+}
+
+function drawCrop(e) {
+  if (!isDrawing) return;
+  const rect = cropCanvas.getBoundingClientRect();
+  currentX = e.clientX - rect.left;
+  currentY = e.clientY - rect.top;
+  const sel = document.getElementById('cropSelection');
+  sel.style.left = Math.min(startX, currentX) + 'px';
+  sel.style.top = Math.min(startY, currentY) + 'px';
+  sel.style.width = Math.abs(currentX - startX) + 'px';
+  sel.style.height = Math.abs(currentY - startY) + 'px';
+}
+
+function endCrop(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  const w = Math.abs(currentX - startX);
+  const h = Math.abs(currentY - startY);
+  if (w < 10 || h < 10) return;
+
+  // 크롭 이미지 생성
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+  const tempCtx = tempCanvas.getContext('2d');
+  const scaleX = cropImg.width / cropCanvas.width;
+  const scaleY = cropImg.height / cropCanvas.height;
+  const sx = Math.min(startX, currentX) * scaleX;
+  const sy = Math.min(startY, currentY) * scaleY;
+  tempCtx.drawImage(cropImg, sx, sy, w * scaleX, h * scaleY, 0, 0, w, h);
+  const cropSrc = tempCanvas.toDataURL('image/png');
+
+  croppedItems.push({ qImg: cropSrc, id: Date.now() + Math.random() });
+  renderCropList();
+  document.getElementById('cropSelection').style.display = 'none';
+}
+
+function renderCropList() {
+  const list = document.getElementById('cropList');
+  list.innerHTML = croppedItems.map((item, i) => `
+    <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+      <img src="${item.qImg}" style="width:100%;display:block;">
+      <div style="padding:6px;display:flex;gap:4px;">
+        <button class="btn btn-primary btn-sm" style="flex:1;font-size:11px;" onclick="saveCropItem(${i})">DB 추가</button>
+        <button class="btn btn-danger btn-sm" style="font-size:11px;" onclick="deleteCropItem(${i})">삭제</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function saveCropItem(i) {
+  const item = croppedItems[i];
+  const p = {
+    id: Date.now() + Math.random(),
+    subject: '', book: 'PDF 크롭', unit1: '', unit2: '', unit3: '',
+    num: problems.length + 1, diff: 3, answer: '', solution: '',
+    qImg: item.qImg, aImg: null, sImgs: [], size: '1x1',
+    date: new Date().toISOString().split('T')[0]
+  };
+  problems.push(p);
+  localStorage.setItem('problems', JSON.stringify(problems));
+  saveProblemToNotion(p);
+  showToast('DB에 추가됐어요 ✓');
+  croppedItems.splice(i, 1);
+  renderCropList();
+}
+
+function deleteCropItem(i) {
+  croppedItems.splice(i, 1);
+  renderCropList();
+}
+
+function approveAllCrops() {
+  croppedItems.forEach((item, i) => saveCropItem(0));
+  showToast(`전체 DB에 추가됐어요 ✓`);
+}
+
+function prevCropPage() {
+  if (currentCropPage > 0) { currentCropPage--; loadCropPage(currentCropPage); }
+}
+function nextCropPage() {
+  if (currentCropPage < cropPages.length - 1) { currentCropPage++; loadCropPage(currentCropPage); }
+}
+
 // ===== TOAST =====
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1948,6 +2287,7 @@ function showToast(msg) {
 // ===== INIT =====
 renderProblemGrid();
 loadNotionStudents();
+setupPasteZones();
 // 노션에서 문제 자동 로드 (배포 환경에서만)
 if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
   setTimeout(loadProblemsFromNotion, 1000);
