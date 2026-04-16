@@ -1754,7 +1754,7 @@ if (problems.length === 0) {
     { id: 2, subject: '수학', book: '개념원리', unit1: '수와 연산', unit2: '수열', unit3: '등비수열', num: 2, diff: 4, answer: '12', solution: '등비수열 공식 적용', qImg: null, aImg: null, sImg: null, size: '1x1', date: '2026-04-10' },
     { id: 3, subject: '수학', book: '올림포스', unit1: '함수', unit2: '삼각함수', unit3: 'sin·cos', num: 5, diff: 5, answer: '②', solution: '삼각함수 변환 공식', qImg: null, aImg: null, sImg: null, size: '1x2', date: '2026-04-11' },
   ];
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
 }
 
 // ===== SCREENS =====
@@ -1880,7 +1880,7 @@ function moveToTrash(id) {
   trashedProblems.push(p);
   problems = problems.filter(x => x.id !== id);
   selectedProblems.delete(id);
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   saveTrash();
   updateTrashBadge();
 }
@@ -1891,7 +1891,7 @@ function restoreFromTrash(id) {
   delete p.deletedAt;
   problems.push(p);
   trashedProblems = trashedProblems.filter(x => x.id !== id);
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   saveTrash();
   updateTrashBadge();
   renderTrashGrid();
@@ -2056,7 +2056,7 @@ function applyBulkEdit() {
       if (val !== '') p[key] = val;
     });
   });
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   closeBulkEditModal();
   filterProblems();
   showToast(`${selectedProblems.size}개 문제가 수정됐어요 ✓`);
@@ -2195,7 +2195,7 @@ function savePreviewEdit() {
     p.sImgs = [...previewEditImages.sArr];
     p.sImg  = p.sImgs[0];
   }
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   closePreviewModal();
   filterProblems();
   showToast('문제가 수정됐어요 ✓');
@@ -2435,7 +2435,53 @@ function closeUploadModal() {
   document.querySelector('#uploadModal .modal-header h2').textContent = '문제 추가';
 }
 
-// ===== CLOUDINARY 업로드 =====
+// ===== localStorage base64 정리 =====
+// 기존에 저장된 base64 이미지를 제거해서 용량 확보
+function cleanBase64FromStorage() {
+  try {
+    const raw = localStorage.getItem('problems');
+    if (!raw) return;
+    const arr = JSON.parse(raw);
+    let changed = false;
+    arr.forEach(p => {
+      ['qImg', 'aImg', 'sImg'].forEach(key => {
+        if (p[key] && p[key].startsWith('data:')) {
+          p[key] = null;
+          changed = true;
+        }
+      });
+      if (p.sImgs) {
+        const cleaned = p.sImgs.filter(s => s && !s.startsWith('data:'));
+        if (cleaned.length !== p.sImgs.length) { p.sImgs = cleaned; changed = true; }
+      }
+    });
+    if (changed) {
+      localStorage.setItem('problems', JSON.stringify(arr));
+      console.log('base64 이미지 정리 완료');
+    }
+  } catch(e) { console.warn('base64 정리 실패:', e); }
+}
+
+// localStorage 저장 시 용량 초과 방지
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch(e) {
+    if (e.name === 'QuotaExceededError') {
+      showToast('⚠️ 저장 공간 부족. 기존 base64 이미지를 정리합니다...');
+      cleanBase64FromStorage();
+      try {
+        localStorage.setItem(key, value);
+        showToast('✅ 정리 완료 후 저장됐어요');
+      } catch(e2) {
+        showToast('❌ 저장 실패: 저장 공간이 부족합니다');
+        console.error('저장 실패:', e2);
+      }
+    }
+  }
+}
+
+function triggerUpload(id) { document.getElementById(id).click(); }
 async function uploadToCloudinary(base64DataUrl, folder) {
   try {
     const res = await fetch('/.netlify/functions/upload-image', {
@@ -2619,7 +2665,7 @@ function saveProblem() {
     showToast('문제가 저장됐어요 ✓');
     saveProblemToNotion(p);
   }
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   saveStickyMeta(p);
   closeUploadModal();
   renderProblemGrid();
@@ -2644,7 +2690,7 @@ function saveAndNext() {
     saveProblemToNotion(p);
     showToast('저장됨, 다음 문제를 입력하세요');
   }
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   saveStickyMeta(p);
   renderProblemGrid();
   // 이미지 초기화
@@ -2717,7 +2763,7 @@ function approvePdfProblems() {
       size: '1x1', date: new Date().toISOString().split('T')[0], text
     });
   });
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   document.getElementById('pdfReviewArea').style.display = 'none';
   showToast(`${items.length}개 문제가 DB에 추가되었어요 ✓`);
 }
@@ -3237,7 +3283,7 @@ async function loadProblemsFromNotion() {
         problems.push({ ...np, notionId: np.id, id: np.id });
       }
     });
-    localStorage.setItem('problems', JSON.stringify(problems));
+    safeSetItem('problems', JSON.stringify(problems));
     renderProblemGrid();
     showToast(`✓ ${res.problems.length}개 문제를 불러왔어요`);
   } else {
@@ -3252,7 +3298,7 @@ async function saveProblemToNotion(p) {
     // 로컬 문제에 notionId 저장
     const local = problems.find(lp => lp.id === p.id);
     if (local) { local.notionId = res.id; local.notionUrl = res.url; }
-    localStorage.setItem('problems', JSON.stringify(problems));
+    safeSetItem('problems', JSON.stringify(problems));
     showToast('✓ 노션에도 저장됐어요');
   }
 }
@@ -3323,10 +3369,12 @@ function setupPasteZones() {
 
   // 마우스가 올라간 칸 추적
   document.addEventListener('mouseover', (e) => {
+    if (!e.target || typeof e.target.closest !== 'function') return;
     const zone = e.target.closest('.paste-zone');
     if (zone) hoveredZone = zone.id;
   });
   document.addEventListener('mouseleave', (e) => {
+    if (!e.target || typeof e.target.closest !== 'function') return;
     const zone = e.target.closest('.paste-zone');
     if (zone) hoveredZone = null;
   }, true);
@@ -3542,7 +3590,7 @@ function saveCropItem(i) {
     date: new Date().toISOString().split('T')[0]
   };
   problems.push(p);
-  localStorage.setItem('problems', JSON.stringify(problems));
+  safeSetItem('problems', JSON.stringify(problems));
   saveProblemToNotion(p);
   showToast('DB에 추가됐어요 ✓');
   croppedItems.splice(i, 1);
@@ -3575,6 +3623,7 @@ function showToast(msg) {
 }
 
 // ===== INIT =====
+cleanBase64FromStorage(); // 기존 base64 이미지 정리
 renderProblemGrid();
 loadNotionStudents();
 loadStickyFooter();
