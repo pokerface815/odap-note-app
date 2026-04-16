@@ -662,18 +662,11 @@
     column-gap: 16px;
     column-rule: 1px solid var(--border);
   }
-  #explanationGrid > div,
-  .exp-item {
+  #explanationGrid > div {
     break-inside: avoid;
     -webkit-column-break-inside: avoid;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
   }
-  .answer-grid,
-  .answer-grid-extra {
+  .answer-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0;
@@ -772,155 +765,77 @@
     .note-editor-wrap { grid-template-columns: 1fr !important; display: block !important; }
     .note-preview-area { box-shadow: none !important; border: none !important; border-radius: 0 !important; margin: 0 !important; }
 
-    /* ── 모든 페이지 공통: flex column, 고정 A4 높이 ── */
-    .a4-page, .answer-sheet, .blank-page {
-      width: 210mm !important;
-      height: 297mm !important;
-      padding: 20mm 15mm 15mm 15mm !important;
-      margin: 0 !important;
+    /* 문제 페이지: 페이지 나누기 없음 — blank-page 또는 answer-sheet가 담당 */
+    .a4-page {
+      width: 210mm;
+      height: 297mm;
+      padding: 20mm 15mm 15mm 15mm;
+      margin: 0;
       border: none !important;
       border-radius: 0 !important;
       background: white !important;
-      box-sizing: border-box !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
+      box-sizing: border-box;
     }
-
-    /* 문제 페이지: 첫 페이지는 page-break 없음 */
-    .a4-page { page-break-before: auto; break-before: auto; }
+    /* 추가 문제 페이지는 앞 a4-page 뒤에 이어서 새 페이지로 시작 */
     .a4-page-extra {
       margin-top: 0 !important;
-      page-break-before: always !important;
-      break-before: page !important;
+      page-break-before: always;
+      break-before: page;
     }
 
-    /* 정답/해설/빈 페이지: 항상 새 페이지 */
-    .answer-sheet, .blank-page {
-      page-break-before: always !important;
-      break-before: page !important;
-    }
-
-    /* 제목 입력란 */
-    .page-header-input {
-      flex-shrink: 0;
-    }
-
-    /* 문제 그리드: 남은 공간 전부 차지 */
-    .problems-grid {
-      flex: 1 !important;
-      min-height: 0 !important;
-    }
-
-    /* 정답 그리드: 남은 공간 전부 차지 */
-    #answerGrid {
-      flex: 1 !important;
-      min-height: 0 !important;
-    }
-
-    /* 해설 그리드: 남은 공간 전부 차지 + 2단 column */
-    #explanationGrid {
-      flex: 1 !important;
-      min-height: 0 !important;
-      column-count: 2 !important;
-      column-gap: 14px !important;
-      column-rule: 1px solid #e0e0e0 !important;
-      column-fill: auto !important;
-    }
-    /* 해설 항목: 단 중간에 잘리지 않고 통째로 다음 단으로 */
-    #explanationGrid > div {
-      break-inside: avoid !important;
-      -webkit-column-break-inside: avoid !important;
-      page-break-inside: avoid !important;
-    }
-
-    /* h3 제목: 다음 내용과 분리 안 됨 */
-    .answer-sheet h3 {
-      flex-shrink: 0;
-      break-after: avoid !important;
-      page-break-after: avoid !important;
-    }
-
-    /* 격려의 말: 하단 고정 */
-    .page-footer-input, #blankFooter, #answerFooter, #explanationFooter {
-      flex-shrink: 0 !important;
-      width: 100% !important;
-      border: none !important;
-      border-top: 1px solid #e8e4d8 !important;
-      background: transparent !important;
-      padding: 4px 0 !important;
-      font-size: 11px !important;
-      color: #666 !important;
-      font-family: 'Noto Sans KR', sans-serif !important;
-      margin-top: 6px !important;
-    }
-
-    /* 페이지 번호: 하단 고정 */
-    .page-number,
-    #pageNumber1, #blankPageNumber,
-    #answerPageNumber, #explanationPageNumber {
-      flex-shrink: 0 !important;
-      text-align: center !important;
-      font-size: 11px !important;
-      color: #999 !important;
-      padding: 4px 0 2px !important;
-      font-family: 'Noto Serif KR', serif !important;
-    }
-
-    /* 빈 페이지: 내용 없으니 flex-grow로 공간 채움 */
-    .blank-page-label { display: none !important; }
-    #blankPage::before {
-      content: '';
-      flex: 1;
-      display: block;
-    }
-
-    /* 3. 해설 체크 없을때 PDF에서 완전히 숨김 */
-    #explanationSheet[style*="display: none"],
-    #explanationSheet[style*="display:none"] {
-      display: none !important;
-    }
-
-    /* 해설 column: 항목이 단보다 크면 다음 페이지 왼쪽 단으로 */
-    #explanationGrid {
-      flex: 1 !important;
-      min-height: 0 !important;
-      column-count: 2 !important;
-      column-gap: 14px !important;
-      column-rule: 1px solid #e0e0e0 !important;
-      column-fill: auto !important;
-    }
-    /* 해설 항목: 단 안에서 잘리지 않게 */
-    .exp-item {
-      break-inside: avoid !important;
-      -webkit-column-break-inside: avoid !important;
-      page-break-inside: avoid !important;
-      padding: 8px 0 !important;
-      border-bottom: 1px solid #eee !important;
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 4px !important;
-    }
-
-    /* 정답 추가 페이지 */
-    .answer-sheet-extra {
-      width: 210mm !important;
-      height: 297mm !important;
-      padding: 20mm 15mm 15mm 15mm !important;
-      margin: 0 !important;
+    /* 정답/해설 페이지 - a4-page와 동일한 방식 */
+    .answer-sheet {
+      width: 210mm;
+      height: 297mm;
+      padding: 20mm 15mm 15mm 15mm;
+      margin: 0;
       border: none !important;
       border-radius: 0 !important;
       background: white !important;
-      page-break-before: always !important;
-      break-before: page !important;
-      box-sizing: border-box !important;
-      display: flex !important;
-      flex-direction: column !important;
+      page-break-before: always;
+      break-before: page;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
     }
-    .answer-grid-extra {
-      flex: 1 !important;
-      min-height: 0 !important;
+    /* h3 제목과 본문이 반드시 같은 페이지에 */
+    .answer-sheet h3 {
+      break-after: avoid;
+      page-break-after: avoid;
     }
+    #answerGrid, #explanationGrid {
+      break-before: avoid;
+      page-break-before: avoid;
+    }
+    /* 페이지 번호: 각 answer-sheet 하단 중앙에 절대 고정 */
+    #answerPageNumber, #explanationPageNumber {
+      position: absolute;
+      bottom: 8mm;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+    }
+    /* 해설 column */
+    #explanationGrid {
+      column-count: 2;
+      column-gap: 16px;
+      column-rule: 1px solid #e0e0e0;
+    }
+    #explanationGrid > div {
+      break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+    }
+
+    /* 빈 페이지: 새 페이지로 시작 */
+    .blank-page {
+      width: 210mm;
+      height: 297mm;
+      background: white !important;
+      page-break-before: always;
+      break-before: page;
+    }
+    .blank-page-label { display: none !important; }
   }
 
   .paste-zone:hover {
@@ -990,8 +905,17 @@
         <div class="nav-item active" onclick="showScreen('db')">
           <span class="icon">📚</span> 문제 DB
         </div>
+        <div class="nav-item" onclick="showScreen('upload-pdf')">
+          <span class="icon">📄</span> PDF 자동 분리
+        </div>
         <div class="nav-item" onclick="showScreen('trash')">
           <span class="icon">🗑️</span> 휴지통 <span id="trashBadge" style="display:none;background:#c0392b;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;"></span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">노션 연동</div>
+        <div class="nav-item" onclick="loadProblemsFromNotion()">
+          <span class="icon">🔄</span> 노션에서 동기화
         </div>
       </div>
       <div class="nav-section">
@@ -1154,7 +1078,64 @@
           <p>+ 문제 추가 버튼을 눌러 첫 문제를 등록해보세요</p>
         </div>
       </div>
-    </div><!-- ===== SCREEN: TRASH ===== -->
+    </div>
+
+    <!-- ===== SCREEN: PDF 자동 분리 ===== -->
+    <div id="screen-upload-pdf" class="screen">
+      <div class="topbar">
+        <div class="topbar-title">📄 PDF 자동 분리</div>
+      </div>
+      <div class="content">
+        <div class="card" style="max-width:700px;">
+          <h3 style="font-size:15px;margin-bottom:6px;">PDF 페이지 업로드</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">PDF 페이지를 이미지로 업로드하면 문제 영역을 직접 드래그해서 잘라낼 수 있어요.</p>
+          <div id="pdfPageUploadZone"
+            style="border:2px dashed var(--border2);border-radius:var(--radius);padding:40px 20px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--bg);"
+            onclick="document.getElementById('pdfPageInput').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='var(--accent-light)';"
+            ondragleave="this.style.borderColor='var(--border2)';this.style.background='var(--bg)';"
+            ondrop="event.preventDefault();this.style.borderColor='var(--border2)';this.style.background='var(--bg)';handlePdfPageUpload({files: event.dataTransfer.files});">
+            <div style="font-size:32px;margin-bottom:10px;">🖼️</div>
+            <p style="font-size:14px;font-weight:500;color:var(--text);">클릭하거나 이미지를 드래그해서 올려주세요</p>
+            <p style="font-size:12px;color:var(--text3);margin-top:6px;">JPG, PNG — 한 번에 여러 페이지 가능</p>
+            <p style="font-size:12px;color:var(--text3);margin-top:4px;">PDF는 Acrobat에서 스크린샷 찍어서 올려주세요</p>
+          </div>
+          <input type="file" id="pdfPageInput" accept="image/*" multiple style="display:none" onchange="handlePdfPageUpload(this)">
+        </div>
+
+        <!-- 크롭 작업 영역 -->
+        <div id="cropWorkArea" style="display:none;margin-top:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div>
+              <h3 style="font-size:15px;margin-bottom:4px;">문제 영역 선택</h3>
+              <p style="font-size:13px;color:var(--text2);">드래그로 문제 영역을 선택하세요. 선택 후 저장 버튼을 누르면 DB에 추가돼요.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="cropPageInfo" style="font-size:13px;color:var(--text2);"></span>
+              <button class="btn btn-secondary btn-sm" onclick="prevCropPage()">◀ 이전</button>
+              <button class="btn btn-secondary btn-sm" onclick="nextCropPage()">다음 ▶</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:20px;align-items:flex-start;">
+            <!-- 캔버스 영역 -->
+            <div style="flex:1;position:relative;">
+              <canvas id="cropCanvas" style="border:1px solid var(--border);border-radius:var(--radius);cursor:crosshair;max-width:100%;display:block;"></canvas>
+              <div id="cropSelection" style="position:absolute;border:2px solid var(--accent);background:rgba(45,90,61,0.1);pointer-events:none;display:none;"></div>
+            </div>
+
+            <!-- 크롭 목록 -->
+            <div style="width:200px;flex-shrink:0;">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">잘라낸 문제들</div>
+              <div id="cropList" style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;"></div>
+              <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px;" onclick="approveAllCrops()">전체 DB에 추가</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN: TRASH ===== -->
     <div id="screen-trash" class="screen">
       <div class="topbar">
         <div class="topbar-title">🗑️ 휴지통</div>
@@ -1217,24 +1198,20 @@
             <!-- 빈 페이지 (홀수 페이지 맞추기용, JS로 show/hide) -->
             <div class="blank-page" id="blankPage" style="display:none;">
               <span class="blank-page-label">빈 페이지</span>
-              <input class="page-footer-input" id="blankFooter" type="text" placeholder="" readonly>
-              <div class="page-number" id="blankPageNumber"></div>
             </div>
 
             <!-- Answer sheet preview -->
             <div class="answer-sheet" id="answerSheet">
               <h3>정 답</h3>
               <div class="answer-grid" id="answerGrid"></div>
-              <input class="page-footer-input" id="answerFooter" type="text" placeholder="" readonly>
-              <div class="page-number" id="answerPageNumber"></div>
+              <div class="page-number" id="answerPageNumber" style="margin-top:12px;"></div>
             </div>
 
             <!-- Explanation sheet preview -->
             <div class="answer-sheet" id="explanationSheet" style="display:none;">
               <h3 id="explanationTitle">해 설</h3>
               <div id="explanationGrid"></div>
-              <input class="page-footer-input" id="explanationFooter" type="text" placeholder="" readonly>
-              <div class="page-number" id="explanationPageNumber"></div>
+              <div class="page-number" id="explanationPageNumber" style="margin-top:12px;"></div>
             </div>
           </div>
 
@@ -1265,6 +1242,14 @@
                 </label>
                 <div style="font-size:11px;color:var(--text3);margin-top:4px;">해설이 있는 문제의 해설을 정답 뒤에 추가합니다</div>
               </div>
+              <div class="form-group">
+                <label class="form-label">노션으로 전송</label>
+                <select class="form-select" id="notionStudent">
+                  <option value="">학생 선택...</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;" onclick="sendToNotion()">노션에 전송</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1760,7 +1745,7 @@ let uploadedImages = { q: null, a: null, sArr: [null, null, null, null] };
 let solSlotCount = 1;
 let currentPickerCellIndex = -1;
 let noteCells = []; // 동적 배열
-
+let notionStudents = [];
 
 // Sample data
 if (problems.length === 0) {
@@ -1777,10 +1762,10 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
-  const navMap = { db: 0, trash: 1, editor: 2, list: 3 };
+  const navMap = { db: 0, 'upload-pdf': 1, trash: 2, editor: 3, list: 4 };
   document.querySelectorAll('.nav-item')[navMap[name]]?.classList.add('active');
   if (name === 'db') renderProblemGrid();
-  if (name === 'list') { renderNoteList(); }
+  if (name === 'list') renderNoteList();
   if (name === 'editor') renderEditorPanel();
   if (name === 'trash') renderTrashGrid();
 }
@@ -1916,6 +1901,7 @@ function restoreFromTrash(id) {
 function permanentDelete(id) {
   if (!confirm('완전히 삭제할까요? 되돌릴 수 없어요.')) return;
   const p = trashedProblems.find(x => x.id === id);
+  if (p && p.notionId) notionCall('deleteProblem', { id: p.notionId });
   trashedProblems = trashedProblems.filter(x => x.id !== id);
   saveTrash();
   updateTrashBadge();
@@ -1927,6 +1913,7 @@ function emptyTrash() {
   if (trashedProblems.length === 0) { showToast('휴지통이 비어있어요'); return; }
   if (!confirm(`휴지통의 ${trashedProblems.length}개 문제를 모두 완전 삭제할까요?`)) return;
   trashedProblems.forEach(p => {
+    if (p.notionId) notionCall('deleteProblem', { id: p.notionId });
   });
   trashedProblems = [];
   saveTrash();
@@ -1941,6 +1928,7 @@ function autoCleanTrash() {
   const before = trashedProblems.length;
   trashedProblems = trashedProblems.filter(p => {
     if (p.deletedAt && now - p.deletedAt > week) {
+      if (p.notionId) notionCall('deleteProblem', { id: p.notionId });
       return false;
     }
     return true;
@@ -2170,9 +2158,16 @@ function peRenderSolSlots() {
 function peAddSolSlot(input) {
   if (!input || !input.files || !input.files[0]) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    previewEditImages.sArr.push(e.target.result);
+  reader.onload = async e => {
+    const src = e.target.result;
+    // 미리보기용 임시 push (나중에 URL로 교체)
+    const idx = previewEditImages.sArr.length;
+    previewEditImages.sArr.push(src);
     peRenderSolSlots();
+    showToast('💡 해설 이미지 업로드 중...');
+    const url = await uploadToCloudinary(src);
+    previewEditImages.sArr[idx] = url;
+    showToast('💡 해설 이미지 추가 완료 ✓');
   };
   reader.readAsDataURL(input.files[0]);
 }
@@ -2210,13 +2205,17 @@ function pePreviewUpload(type, input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     const src = e.target.result;
-    previewEditImages[type] = src;
+    // 미리보기 즉시 표시
     const previewEl = document.getElementById(`pe_${type}Preview`);
     if (previewEl) previewEl.innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:80px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="peClearImg('${type}')">×</div></div>`;
     const zoneEl = document.getElementById(`pe_${type}Zone`);
     if (zoneEl) zoneEl.style.display = 'none';
+    // Cloudinary 업로드
+    showToast('☁️ 이미지 업로드 중...');
+    previewEditImages[type] = await uploadToCloudinary(src);
+    showToast('✅ 이미지 교체 완료 ✓');
   };
   reader.readAsDataURL(file);
 }
@@ -2436,22 +2435,52 @@ function closeUploadModal() {
   document.querySelector('#uploadModal .modal-header h2').textContent = '문제 추가';
 }
 
+// ===== CLOUDINARY 업로드 =====
+async function uploadToCloudinary(base64DataUrl, folder) {
+  try {
+    const res = await fetch('/.netlify/functions/upload-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64DataUrl, folder: folder || 'odap-note' }),
+    });
+    const data = await res.json();
+    if (data.url) return data.url;
+    console.error('Cloudinary 업로드 실패:', data.error);
+    return base64DataUrl; // 실패 시 base64 그대로 사용 (fallback)
+  } catch (err) {
+    console.error('업로드 오류:', err);
+    return base64DataUrl; // 실패 시 base64 그대로 사용 (fallback)
+  }
+}
+
+// 이미지 업로드 + Cloudinary 전송 통합 함수
+async function processImage(base64DataUrl) {
+  showToast('☁️ 이미지 업로드 중...', 3000);
+  const url = await uploadToCloudinary(base64DataUrl);
+  if (url !== base64DataUrl) showToast('✅ 업로드 완료!');
+  return url;
+}
+
 function triggerUpload(id) { document.getElementById(id).click(); }
 
 function previewUpload(inputId, previewId, zoneId) {
   const file = document.getElementById(inputId).files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     const src = e.target.result;
-    if (inputId === 'q_img') { uploadedImages.q = src; document.getElementById('qScale').style.display = 'flex'; }
-    if (inputId === 'a_img') { uploadedImages.a = src; }
+    // 미리보기는 base64로 즉시 표시
     document.getElementById(previewId).innerHTML = `
       <div class="uploaded-preview" style="display:block;margin-top:8px;">
         <img src="${src}" alt="preview" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);">
         <div class="remove-btn" onclick="removePreview('${inputId}','${previewId}','${zoneId}')">×</div>
       </div>`;
     if (zoneId) document.getElementById(zoneId).style.display = 'none';
+    if (inputId === 'q_img') document.getElementById('qScale').style.display = 'flex';
+    // Cloudinary 업로드
+    const url = await processImage(src);
+    if (inputId === 'q_img') uploadedImages.q = url;
+    if (inputId === 'a_img') uploadedImages.a = url;
   };
   reader.readAsDataURL(file);
 }
@@ -2471,17 +2500,19 @@ function previewSolUpload(idx) {
   const file = document.getElementById('s_img_' + idx).files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     const src = e.target.result;
-    uploadedImages.sArr[idx] = src;
+    // 미리보기 즉시 표시
     document.getElementById('sPreview' + idx).innerHTML = `
       <div class="uploaded-preview" style="display:block;margin-top:8px;">
         <img src="${src}" alt="해설" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);">
         <div class="remove-btn" onclick="removeSolPreview(${idx})">×</div>
       </div>`;
     document.getElementById('sZone' + idx).style.display = 'none';
-    // 다음 슬롯 자동 열기
     if (idx + 1 < 4 && idx + 1 >= solSlotCount) addSolSlot();
+    // Cloudinary 업로드
+    const url = await processImage(src);
+    uploadedImages.sArr[idx] = url;
   };
   reader.readAsDataURL(file);
 }
@@ -2509,15 +2540,6 @@ function updateAnswerTitle() {
 function saveStickyFooter() {
   const val = document.getElementById('noteFooter').value;
   localStorage.setItem('stickyFooter', val);
-  // 정답/해설/빈 페이지에도 동기화
-  ['answerFooter','explanationFooter','blankFooter'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-  });
-  // 추가 문제 페이지 footer도 동기화
-  document.querySelectorAll('.a4-page-extra .page-footer-input').forEach(el => {
-    el.value = val;
-  });
 }
 
 function loadStickyFooter() {
@@ -2586,6 +2608,7 @@ function saveProblem() {
     const idx = problems.findIndex(x => x.id === editingProblemId);
     if (idx !== -1) {
       p.id = editingProblemId;
+      p.notionId = problems[idx].notionId;
       problems[idx] = p;
     }
     editingProblemId = null;
@@ -2594,6 +2617,7 @@ function saveProblem() {
   } else {
     problems.push(p);
     showToast('문제가 저장됐어요 ✓');
+    saveProblemToNotion(p);
   }
   localStorage.setItem('problems', JSON.stringify(problems));
   saveStickyMeta(p);
@@ -2608,6 +2632,7 @@ function saveAndNext() {
     const idx = problems.findIndex(x => x.id === editingProblemId);
     if (idx !== -1) {
       p.id = editingProblemId;
+      p.notionId = problems[idx].notionId;
       problems[idx] = p;
     }
     editingProblemId = null;
@@ -2616,6 +2641,7 @@ function saveAndNext() {
   } else {
     // 새 문제 추가
     problems.push(p);
+    saveProblemToNotion(p);
     showToast('저장됨, 다음 문제를 입력하세요');
   }
   localStorage.setItem('problems', JSON.stringify(problems));
@@ -2639,6 +2665,61 @@ function saveAndNext() {
   document.getElementById('m_sol_text').value = '';
   document.getElementById('m_diff_text').value = '';
   if (autoIncr && editingProblemId === null) document.getElementById('m_num').value = p.num + 1;
+}
+
+// ===== PDF UPLOAD =====
+function handlePdfUpload(input) {
+  if (!input.files[0]) return;
+  document.getElementById('pdfProcessing').style.display = 'block';
+  document.getElementById('pdfReviewArea').style.display = 'none';
+  // Simulate Claude analysis
+  setTimeout(() => {
+    document.getElementById('pdfProcessing').style.display = 'none';
+    const mockProblems = [
+      { num: 1, text: '[1번] 등차수열 {an}에서 a1=2, 공차 d=3일 때, a10을 구하시오.' },
+      { num: 2, text: '[2번] 다음 중 등비수열이 되는 것을 고르시오.\n① 1, 2, 4, 8\n② 1, 3, 6, 10\n③ 2, 4, 6, 8' },
+      { num: 3, text: '[3번] sin30° + cos60° 의 값을 구하시오.' },
+    ];
+    showPdfReview(mockProblems);
+  }, 2000);
+}
+
+function showPdfReview(list) {
+  document.getElementById('pdfReviewArea').style.display = 'block';
+  document.getElementById('pdfReviewList').innerHTML = list.map((p, i) => `
+    <div class="pdf-problem-item">
+      <div class="pdf-problem-header">
+        <span class="pdf-problem-num">${p.num}번 문제</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="this.closest('.pdf-problem-item').querySelector('.pdf-problem-body').setAttribute('contenteditable','true');this.textContent='편집 중...';this.disabled=true;">✏️ 수정</button>
+          <button class="btn btn-danger btn-sm" onclick="this.closest('.pdf-problem-item').remove()">삭제</button>
+        </div>
+      </div>
+      <div class="pdf-problem-body" data-num="${p.num}">${p.text}</div>
+    </div>
+  `).join('');
+}
+
+function cancelPdfReview() {
+  document.getElementById('pdfReviewArea').style.display = 'none';
+  document.getElementById('pdfFileInput').value = '';
+}
+
+function approvePdfProblems() {
+  const items = document.querySelectorAll('.pdf-problem-body');
+  items.forEach(item => {
+    const text = item.textContent.trim();
+    const num = parseInt(item.dataset.num);
+    problems.push({
+      id: Date.now() + Math.random(),
+      subject: '수학', book: 'PDF 업로드', unit1: '', unit2: '', unit3: '',
+      num, diff: 3, answer: '', solution: '', qImg: null, aImg: null, sImg: null,
+      size: '1x1', date: new Date().toISOString().split('T')[0], text
+    });
+  });
+  localStorage.setItem('problems', JSON.stringify(problems));
+  document.getElementById('pdfReviewArea').style.display = 'none';
+  showToast(`${items.length}개 문제가 DB에 추가되었어요 ✓`);
 }
 
 // ===== EDITOR =====
@@ -2905,87 +2986,40 @@ function renderAnswerSheet(totalProblemPages, noteTitle, totalPageCount) {
   const answerPageNumEl = document.getElementById('answerPageNumber');
   if (answerPageNumEl) answerPageNumEl.textContent = `— ${answerPageNum} / ${totalPageCount || answerPageNum} —`;
 
-  // 격려글: 정답/빈 페이지에도 동일하게
-  const footerVal = document.getElementById('noteFooter')?.value || '';
-  const answerFooterEl = document.getElementById('answerFooter');
-  if (answerFooterEl) answerFooterEl.value = footerVal;
-  const blankFooterEl = document.getElementById('blankFooter');
-  if (blankFooterEl) blankFooterEl.value = footerVal;
-
-  // 빈 페이지 번호
-  const blankPageNumEl = document.getElementById('blankPageNumber');
-  if (blankPageNumEl && needBlank) {
-    const blankNum = totalProblemPages + 1;
-    blankPageNumEl.textContent = `— ${blankNum} / ${totalPageCount || answerPageNum} —`;
-  }
-
-  // 정답 페이지 제목
+  // 정답 페이지 제목: "오답노트 제목_정답"
   const answerTitle = noteTitle ? `${noteTitle}_정답` : '정 답';
   document.querySelector('#answerSheet h3').textContent = answerTitle;
 
-  // 각 단에 최대 10개씩 → 왼쪽 단 10개, 오른쪽 단 10개 (총 20개/페이지)
-  const ITEMS_PER_COL = 10;
-  const ITEMS_PER_PAGE = ITEMS_PER_COL * 2;
+  // 왼쪽 단 먼저 채우기
+  const leftCount = Math.ceil(noteCells.length / 2);
+  const left = noteCells.slice(0, leftCount);
+  const right = noteCells.slice(leftCount);
 
   const makeCell = (p, isLeft, isLast) => {
     const content = p.aImg
       ? `<img class="answer-img" src="${p.aImg}">`
       : `<span class="answer-val">${p.answer || '—'}</span>`;
-    const borderRight  = isLeft ? '1px solid var(--border)' : 'none';
+    const borderRight = isLeft ? '1px solid var(--border)' : 'none';
     const borderBottom = isLast ? 'none' : '1px solid var(--border)';
     return `<div class="answer-item" style="border-right:${borderRight};border-bottom:${borderBottom};">${content}</div>`;
   };
 
-  // 페이지 단위로 분할
-  const pages = [];
-  for (let i = 0; i < noteCells.length; i += ITEMS_PER_PAGE) {
-    pages.push(noteCells.slice(i, i + ITEMS_PER_PAGE));
-  }
-
-  // 첫 페이지는 answerSheet에, 추가 페이지는 동적 생성
-  const previewArea = document.getElementById('answerSheet').closest('.note-preview-area') || document.getElementById('answerSheet').parentElement;
-
-  // 기존 추가 정답 페이지 제거
-  previewArea.querySelectorAll('.answer-sheet-extra').forEach(el => el.remove());
-
-  const makePageHtml = (pageItems, pageNum) => {
-    const left  = pageItems.slice(0, ITEMS_PER_COL);
-    const right = pageItems.slice(ITEMS_PER_COL);
-    let html = '';
-    for (let i = 0; i < ITEMS_PER_COL; i++) {
-      const lp = left[i];
-      const rp = right[i] || null;
-      if (!lp) break;
-      const isLastRow = (i === left.length - 1);
-      html += makeCell(lp, true, isLastRow && !rp);
-      if (rp) {
-        html += makeCell(rp, false, i === right.length - 1);
-      } else {
-        html += `<div class="answer-item" style="border-right:none;border-bottom:none;"></div>`;
-      }
+  let html = '';
+  for (let i = 0; i < leftCount; i++) {
+    const lp = left[i];
+    const rp = right[i] || null;
+    const isLastRow = (i === leftCount - 1);
+    html += makeCell(lp, true, isLastRow && !rp);
+    if (rp) {
+      html += makeCell(rp, false, isLastRow);
+    } else {
+      html += `<div class="answer-item" style="border-right:none;border-bottom:none;"></div>`;
     }
-    return html;
-  };
-
-  // 첫 페이지 렌더
-  const firstGrid = document.getElementById('answerGrid');
-  firstGrid.style.gridAutoFlow = '';
-  firstGrid.style.gridTemplateRows = '';
-  firstGrid.innerHTML = makePageHtml(pages[0] || [], answerPageNum);
-
-  // 추가 정답 페이지 생성 (2페이지 이상인 경우)
-  for (let pi = 1; pi < pages.length; pi++) {
-    const extraPageNum = answerPageNum + pi;
-    const extra = document.createElement('div');
-    extra.className = 'answer-sheet answer-sheet-extra';
-    extra.innerHTML = `
-      <h3>${answerTitle}</h3>
-      <div class="answer-grid answer-grid-extra">${makePageHtml(pages[pi], extraPageNum)}</div>
-      <input class="page-footer-input" value="${footerVal}" readonly>
-      <div class="page-number">— ${extraPageNum} / ${totalPageCount || answerPageNum} —</div>
-    `;
-    previewArea.appendChild(extra);
   }
+
+  grid.style.gridAutoFlow = '';
+  grid.style.gridTemplateRows = '';
+  grid.innerHTML = html;
 
   // 해설 페이지
   renderExplanationSheet(totalProblemPages, answerPageNum, noteTitle);
@@ -3001,17 +3035,11 @@ function toggleExplanation() {
 
 function renderExplanationSheet(totalProblemPages, answerPageNum, noteTitle) {
   const sheet = document.getElementById('explanationSheet');
+  const grid  = document.getElementById('explanationGrid');
   const checkbox = document.getElementById('includeExplanation');
   const include = checkbox ? checkbox.checked : false;
 
-  // 미리보기에서 숨기기
-  sheet.style.display = include ? 'block' : 'none';
-
-  // explanationSheet 뒤에 붙은 추가 해설 페이지 제거
-  const previewArea = sheet.closest('.note-preview-area') || sheet.parentElement;
-  previewArea.querySelectorAll('.explanation-sheet-extra').forEach(el => el.remove());
-
-  if (!include) return;
+  if (!include) { sheet.style.display = 'none'; return; }
 
   // 해설 있는 문제만
   const withSol = noteCells.filter(p =>
@@ -3019,33 +3047,48 @@ function renderExplanationSheet(totalProblemPages, answerPageNum, noteTitle) {
   );
   if (withSol.length === 0) { sheet.style.display = 'none'; return; }
 
+  sheet.style.display = 'block';
+  sheet.style.pageBreakBefore = 'always';
+  sheet.style.breakBefore = 'page';
+
   // 제목
   const expTitle = noteTitle ? `${noteTitle}_해설` : '해 설';
   document.getElementById('explanationTitle').textContent = expTitle;
 
-  // 페이지 번호 + 격려글
+  // 페이지 번호
   const expPageNum = (answerPageNum || 0) + 1;
-  const expPages = layoutPages(noteCells);
-  const expNeedBlank = (expPages.length % 2 === 1);
-  const expAnsPageNum = expPages.length + (expNeedBlank ? 2 : 1);
-  const expTotal = expAnsPageNum + 1;
-  document.getElementById('explanationPageNumber').textContent = `— ${expPageNum} / ${expTotal} —`;
+  // 전체 페이지 수 (해설이 마지막)
+  const expTotalPages = expPageNum;
+  document.getElementById('explanationPageNumber').textContent = `— ${expPageNum} / ${expTotalPages} —`;
 
-  const footerVal = document.getElementById('noteFooter')?.value || '';
-  const expFooterEl = document.getElementById('explanationFooter');
-  if (expFooterEl) expFooterEl.value = footerVal;
+  // CSS column은 print CSS에서 처리 (JS에서 중복 설정 제거)
+  grid.style.display = '';
+  grid.style.columnCount = '';
+  grid.style.columnGap = '';
+  grid.style.columnRule = '';
+  grid.style.border = '';
+  grid.style.borderRadius = '';
+  grid.style.overflow = '';
+  grid.style.gridTemplateColumns = '';
 
-  // 해설 항목 HTML 생성 함수
-  const makeExpItem = (p) => {
+  grid.innerHTML = withSol.map(p => {
     const imgs = (p.sImgs && p.sImgs.length) ? p.sImgs : (p.sImg ? [p.sImg] : []);
-    return `<div class="exp-item">
-      ${imgs.map(src => `<img src="${src}" style="max-width:100%;height:auto;object-fit:contain;object-position:left top;display:block;">`).join('')}
-    </div>`;
-  };
-
-  // 해설 항목을 첫 페이지 그리드에 넣기 (CSS columns 사용)
-  const grid = document.getElementById('explanationGrid');
-  grid.innerHTML = withSol.map(makeExpItem).join('');
+    return `
+      <div style="
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        page-break-inside: avoid;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      ">
+        ${imgs.map(src => `<img src="${src}" style="max-width:100%;height:auto;object-fit:contain;object-position:left top;display:block;">`).join('')}
+      </div>
+    `;
+  }).join('');
 }
 
 // ===== PROBLEM PICKER =====
@@ -3106,13 +3149,13 @@ function saveNote() {
 
 function exportPdf() {
   const title = document.getElementById('noteTitle').value.trim() || '오답노트';
+  // 파일명에 사용할 수 없는 문자 제거
   const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
   document.title = safeName;
-  // PDF 저장 전 자동으로 노트 저장
-  saveNote();
   showToast('PDF 출력 중...');
   setTimeout(() => {
     window.print();
+    // 인쇄 후 원래 타이틀 복원
     setTimeout(() => { document.title = '오답 노트 생성기'; }, 2000);
   }, 300);
 }
@@ -3166,6 +3209,114 @@ function exportNoteById(id) {
   setTimeout(() => window.print(), 500);
 }
 
+// ===== NOTION API =====
+const API = '/.netlify/functions/notion';
+
+async function notionCall(action, data = {}) {
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, data }),
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Notion API 오류:', e);
+    return { success: false, error: e.message };
+  }
+}
+
+// 노션에서 문제 불러오기
+async function loadProblemsFromNotion() {
+  showToast('노션에서 문제를 불러오는 중...');
+  const res = await notionCall('getProblems');
+  if (res.success && res.problems.length > 0) {
+    // 노션 데이터를 로컬과 병합 (노션 우선)
+    res.problems.forEach(np => {
+      if (!problems.find(p => p.notionId === np.id)) {
+        problems.push({ ...np, notionId: np.id, id: np.id });
+      }
+    });
+    localStorage.setItem('problems', JSON.stringify(problems));
+    renderProblemGrid();
+    showToast(`✓ ${res.problems.length}개 문제를 불러왔어요`);
+  } else {
+    showToast('불러올 문제가 없어요');
+  }
+}
+
+// 문제 노션에 저장
+async function saveProblemToNotion(p) {
+  const res = await notionCall('saveProblem', p);
+  if (res.success) {
+    // 로컬 문제에 notionId 저장
+    const local = problems.find(lp => lp.id === p.id);
+    if (local) { local.notionId = res.id; local.notionUrl = res.url; }
+    localStorage.setItem('problems', JSON.stringify(problems));
+    showToast('✓ 노션에도 저장됐어요');
+  }
+}
+
+// 학생 목록 노션에서 불러오기
+async function loadNotionStudents() {
+  const sel = document.getElementById('notionStudent');
+  // 기본값 먼저
+  const defaults = [
+    { id: '2fc43f2a-920f-8074-b786-cd4af569f033', name: '고승민' },
+    { id: '2f143f2a-920f-80ab-b781-d545e23ff92f', name: '문현빈' },
+    { id: '2f143f2a-920f-80ac-b37c-e1fc510583a6', name: '강화진' },
+  ];
+  defaults.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+
+  // 노션에서 최신 목록 불러오기 시도
+  const res = await notionCall('getStudents');
+  if (res.success && res.students.length > 0) {
+    sel.innerHTML = '<option value="">학생 선택...</option>';
+    res.students.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = s.name;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+// 노션에 오답 노트 전송
+async function sendToNotion() {
+  const studentId = document.getElementById('notionStudent').value;
+  const studentName = document.getElementById('notionStudent').options[document.getElementById('notionStudent').selectedIndex]?.text;
+  if (!studentId) { showToast('학생을 선택해주세요'); return; }
+
+  const title = document.getElementById('noteTitle').value || '오답 노트';
+  const footer = document.getElementById('noteFooter').value;
+  const filledCells = noteCells.filter(Boolean);
+
+  showToast('노션에 전송 중...');
+
+  // 오답 노트 DB에 저장
+  const noteRes = await notionCall('saveNote', {
+    title, footer, student: studentName,
+    subject: filledCells[0]?.subject || '',
+    problemCount: filledCells.length,
+  });
+
+  // 학생 페이지에 전송
+  const sendRes = await notionCall('sendToStudent', {
+    studentId, studentName, noteTitle: title, footer,
+    problems: filledCells,
+    noteId: noteRes.id,
+  });
+
+  if (sendRes.success) {
+    showToast(`✓ ${studentName}의 노션 페이지에 전송됐어요!`);
+  } else {
+    showToast('전송 중 오류가 발생했어요');
+  }
+}
+
 // ===== 클립보드 붙여넣기 (Cmd+V) =====
 function setupPasteZones() {
   let hoveredZone = null;
@@ -3188,12 +3339,9 @@ function setupPasteZones() {
       if (!item.type.startsWith('image/')) continue;
       const file = item.getAsFile();
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         const src = ev.target.result;
 
-        // 1순위: 마우스가 올라간 칸
-        // 2순위: 포커스된 칸
-        // 3순위: 문제 칸이 비어있으면 문제, 아니면 정답, 아니면 해설 순서대로
         const zoneId = hoveredZone
           || (document.activeElement?.classList.contains('paste-zone') ? document.activeElement.id : null)
           || (!uploadedImages.q ? 'qZone' : !uploadedImages.a ? 'aZone' : 'sZone0');
@@ -3201,23 +3349,27 @@ function setupPasteZones() {
         // 미리보기 모달이 열려있으면 pe_ 존 처리
         if (document.getElementById('previewModal')?.classList.contains('open')) {
           if (zoneId === 'pe_qZone') {
-            previewEditImages.q = src;
             document.getElementById('pe_qPreview').innerHTML = makePreviewHtml(src, `peClearImg('q')`);
             document.getElementById('pe_qZone').style.display = 'none';
-            showToast('📝 문제 이미지 교체 ✓');
+            showToast('📝 문제 이미지 교체 중...');
+            previewEditImages.q = await uploadToCloudinary(src);
+            showToast('✅ 문제 이미지 교체 완료');
             return;
           }
           if (zoneId === 'pe_aZone') {
-            previewEditImages.a = src;
             document.getElementById('pe_aPreview').innerHTML = makePreviewHtml(src, `peClearImg('a')`);
             document.getElementById('pe_aZone').style.display = 'none';
-            showToast('✅ 정답 이미지 교체 ✓');
+            showToast('✅ 정답 이미지 업로드 중...');
+            previewEditImages.a = await uploadToCloudinary(src);
+            showToast('✅ 정답 이미지 교체 완료');
             return;
           }
           if (zoneId === 'pe_sZone') {
-            previewEditImages.sArr.push(src);
+            showToast('💡 해설 이미지 업로드 중...');
+            const url = await uploadToCloudinary(src);
+            previewEditImages.sArr.push(url);
             peRenderSolSlots();
-            showToast('💡 해설 이미지 추가 ✓');
+            showToast('💡 해설 이미지 추가 완료');
             return;
           }
         }
@@ -3230,28 +3382,32 @@ function setupPasteZones() {
   });
 }
 
-function applyPasteToZone(zoneId, src) {
+async function applyPasteToZone(zoneId, src) {
   if (!zoneId) return;
 
   if (zoneId === 'qZone') {
-    uploadedImages.q = src;
+    // 미리보기 즉시 표시
     document.getElementById('qPreview').innerHTML = makePreviewHtml(src, `removePreview('q_img','qPreview','qZone')`);
     document.getElementById('qZone').style.display = 'none';
     document.getElementById('qScale').style.display = 'flex';
+    showToast('📝 문제 이미지 업로드 중...');
+    uploadedImages.q = await uploadToCloudinary(src);
     showToast('📝 문제 이미지 ✓');
 
   } else if (zoneId === 'aZone') {
-    uploadedImages.a = src;
     document.getElementById('aPreview').innerHTML = makePreviewHtml(src, `removePreview('a_img','aPreview','aZone')`);
     document.getElementById('aZone').style.display = 'none';
+    showToast('✅ 정답 이미지 업로드 중...');
+    uploadedImages.a = await uploadToCloudinary(src);
     showToast('✅ 정답 이미지 ✓');
 
   } else if (zoneId && zoneId.startsWith('sZone')) {
     const idx = parseInt(zoneId.replace('sZone', ''));
-    uploadedImages.sArr[idx] = src;
     document.getElementById('sPreview' + idx).innerHTML = makePreviewHtml(src, `removeSolPreview(${idx})`);
     document.getElementById('sZone' + idx).style.display = 'none';
     if (idx + 1 < 4 && idx + 1 >= solSlotCount) addSolSlot();
+    showToast(`💡 해설 이미지 ${idx + 1} 업로드 중...`);
+    uploadedImages.sArr[idx] = await uploadToCloudinary(src);
     showToast(`💡 해설 이미지 ${idx + 1} ✓`);
   }
 }
@@ -3261,6 +3417,153 @@ function makePreviewHtml(src, removeCall) {
     <img src="${src}" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);">
     <div class="remove-btn" onclick="${removeCall}">×</div>
   </div>`;
+}
+
+// ===== PDF 페이지 이미지 크롭 =====
+let cropPages = [];
+let currentCropPage = 0;
+let cropCanvas, cropCtx, cropImg;
+let isDrawing = false, startX, startY, currentX, currentY;
+let croppedItems = [];
+
+function handlePdfPageUpload(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  cropPages = [];
+  croppedItems = [];
+  document.getElementById('cropList').innerHTML = '';
+
+  let loaded = 0;
+  files.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      cropPages[i] = e.target.result;
+      loaded++;
+      if (loaded === files.length) {
+        currentCropPage = 0;
+        document.getElementById('cropWorkArea').style.display = 'block';
+        loadCropPage(0);
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function loadCropPage(idx) {
+  cropCanvas = document.getElementById('cropCanvas');
+  cropCtx = cropCanvas.getContext('2d');
+  cropImg = new Image();
+  cropImg.onload = () => {
+    const maxW = cropCanvas.parentElement.clientWidth - 10;
+    const scale = Math.min(1, maxW / cropImg.width);
+    cropCanvas.width = cropImg.width * scale;
+    cropCanvas.height = cropImg.height * scale;
+    cropCtx.drawImage(cropImg, 0, 0, cropCanvas.width, cropCanvas.height);
+  };
+  cropImg.src = cropPages[idx];
+  document.getElementById('cropPageInfo').textContent = `${idx+1} / ${cropPages.length} 페이지`;
+  document.getElementById('cropSelection').style.display = 'none';
+
+  // 마우스 이벤트
+  cropCanvas.onmousedown = startCrop;
+  cropCanvas.onmousemove = drawCrop;
+  cropCanvas.onmouseup = endCrop;
+}
+
+function startCrop(e) {
+  const rect = cropCanvas.getBoundingClientRect();
+  startX = e.clientX - rect.left;
+  startY = e.clientY - rect.top;
+  isDrawing = true;
+  const sel = document.getElementById('cropSelection');
+  sel.style.display = 'block';
+  sel.style.left = startX + 'px';
+  sel.style.top = startY + 'px';
+  sel.style.width = '0';
+  sel.style.height = '0';
+}
+
+function drawCrop(e) {
+  if (!isDrawing) return;
+  const rect = cropCanvas.getBoundingClientRect();
+  currentX = e.clientX - rect.left;
+  currentY = e.clientY - rect.top;
+  const sel = document.getElementById('cropSelection');
+  sel.style.left = Math.min(startX, currentX) + 'px';
+  sel.style.top = Math.min(startY, currentY) + 'px';
+  sel.style.width = Math.abs(currentX - startX) + 'px';
+  sel.style.height = Math.abs(currentY - startY) + 'px';
+}
+
+function endCrop(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  const w = Math.abs(currentX - startX);
+  const h = Math.abs(currentY - startY);
+  if (w < 10 || h < 10) return;
+
+  // 크롭 이미지 생성
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+  const tempCtx = tempCanvas.getContext('2d');
+  const scaleX = cropImg.width / cropCanvas.width;
+  const scaleY = cropImg.height / cropCanvas.height;
+  const sx = Math.min(startX, currentX) * scaleX;
+  const sy = Math.min(startY, currentY) * scaleY;
+  tempCtx.drawImage(cropImg, sx, sy, w * scaleX, h * scaleY, 0, 0, w, h);
+  const cropSrc = tempCanvas.toDataURL('image/png');
+
+  croppedItems.push({ qImg: cropSrc, id: Date.now() + Math.random() });
+  renderCropList();
+  document.getElementById('cropSelection').style.display = 'none';
+}
+
+function renderCropList() {
+  const list = document.getElementById('cropList');
+  list.innerHTML = croppedItems.map((item, i) => `
+    <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+      <img src="${item.qImg}" style="width:100%;display:block;">
+      <div style="padding:6px;display:flex;gap:4px;">
+        <button class="btn btn-primary btn-sm" style="flex:1;font-size:11px;" onclick="saveCropItem(${i})">DB 추가</button>
+        <button class="btn btn-danger btn-sm" style="font-size:11px;" onclick="deleteCropItem(${i})">삭제</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function saveCropItem(i) {
+  const item = croppedItems[i];
+  const p = {
+    id: Date.now() + Math.random(),
+    subject: '', book: 'PDF 크롭', unit1: '', unit2: '', unit3: '',
+    num: problems.length + 1, diff: 3, answer: '', solution: '',
+    qImg: item.qImg, aImg: null, sImgs: [], size: '1x1',
+    date: new Date().toISOString().split('T')[0]
+  };
+  problems.push(p);
+  localStorage.setItem('problems', JSON.stringify(problems));
+  saveProblemToNotion(p);
+  showToast('DB에 추가됐어요 ✓');
+  croppedItems.splice(i, 1);
+  renderCropList();
+}
+
+function deleteCropItem(i) {
+  croppedItems.splice(i, 1);
+  renderCropList();
+}
+
+function approveAllCrops() {
+  croppedItems.forEach((item, i) => saveCropItem(0));
+  showToast(`전체 DB에 추가됐어요 ✓`);
+}
+
+function prevCropPage() {
+  if (currentCropPage > 0) { currentCropPage--; loadCropPage(currentCropPage); }
+}
+function nextCropPage() {
+  if (currentCropPage < cropPages.length - 1) { currentCropPage++; loadCropPage(currentCropPage); }
 }
 
 // ===== TOAST =====
@@ -3273,10 +3576,15 @@ function showToast(msg) {
 
 // ===== INIT =====
 renderProblemGrid();
+loadNotionStudents();
 loadStickyFooter();
 setupPasteZones();
 autoCleanTrash();
 updateTrashBadge();
+// 노션에서 문제 자동 로드 (배포 환경에서만)
+if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+  setTimeout(loadProblemsFromNotion, 1000);
+}
 
 </script>
 </body>
