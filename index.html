@@ -783,8 +783,8 @@
       break-before: page;
     }
 
-    /* 정답/해설 페이지 - a4-page와 동일한 방식 */
-    .answer-sheet {
+    /* 정답 페이지 - 고정 높이 */
+    #answerSheet {
       width: 210mm;
       height: 297mm;
       padding: 20mm 15mm 15mm 15mm;
@@ -795,29 +795,39 @@
       page-break-before: always;
       break-before: page;
       box-sizing: border-box;
-      position: relative;
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
-    /* h3 제목과 본문이 반드시 같은 페이지에 */
-    .answer-sheet h3 {
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    #answerGrid, #explanationGrid {
-      break-before: avoid;
-      page-break-before: avoid;
-    }
-    /* 페이지 번호: 각 answer-sheet 하단 중앙에 절대 고정 */
-    #answerPageNumber, #explanationPageNumber {
-      position: absolute;
-      bottom: 8mm;
-      left: 0; right: 0;
+    #answerGrid { flex: 1; min-height: 0; }
+    #answerPageNumber {
+      flex-shrink: 0;
       text-align: center;
       font-size: 11px;
       color: #999;
+      padding: 6px 0 2px;
+      font-family: 'Noto Serif KR', serif;
     }
-    /* 해설 column */
+
+    /* 해설 페이지 - 내용만큼 높이, 잘림 없음 */
+    #explanationSheet {
+      width: 210mm;
+      height: auto;
+      padding: 20mm 15mm 15mm 15mm;
+      margin: 0;
+      border: none !important;
+      border-radius: 0 !important;
+      background: white !important;
+      page-break-before: always;
+      break-before: page;
+      box-sizing: border-box;
+    }
+    #explanationSheet h3 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
     #explanationGrid {
+      break-before: avoid;
+      page-break-before: avoid;
       column-count: 2;
       column-gap: 16px;
       column-rule: 1px solid #e0e0e0;
@@ -825,6 +835,15 @@
     #explanationGrid > div {
       break-inside: avoid;
       -webkit-column-break-inside: avoid;
+    }
+    #explanationPageNumber {
+      display: block;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      margin-top: 10px;
+      break-before: avoid;
+      page-break-before: avoid;
     }
 
     /* 빈 페이지: 새 페이지로 시작 */
@@ -834,8 +853,18 @@
       background: white !important;
       page-break-before: always;
       break-before: page;
+      position: relative;
     }
     .blank-page-label { display: none !important; }
+    .blank-page-number {
+      position: absolute;
+      bottom: 8mm;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      font-family: 'Noto Serif KR', serif;
+    }
   }
 
   .paste-zone:hover {
@@ -1238,9 +1267,9 @@
                 <div style="font-size:11px;color:var(--text3);margin-top:4px;">해설이 있는 문제의 해설을 정답 뒤에 추가합니다</div>
               </div>
               <div class="form-group">
-                <label class="form-label">학습 일지에 기록</label>
+                <label class="form-label">📚 학습 일지에 기록</label>
                 <select class="form-select" id="notionStudent">
-                  <option value="">학생 선택...</option>
+                  <option value="">학생 불러오는 중...</option>
                 </select>
                 <button class="btn btn-accent btn-sm" style="margin-top:6px;width:100%;" onclick="sendToStudentJournal()">📚 학습 일지에 기록</button>
               </div>
@@ -1740,7 +1769,7 @@ let uploadedImages = { q: null, a: null, sArr: [null, null, null, null] };
 let solSlotCount = 1;
 let currentPickerCellIndex = -1;
 let noteCells = []; // 동적 배열
-
+let notionStudents = [];
 
 // Sample data
 if (problems.length === 0) {
@@ -1896,7 +1925,7 @@ function restoreFromTrash(id) {
 function permanentDelete(id) {
   if (!confirm('완전히 삭제할까요? 되돌릴 수 없어요.')) return;
   const p = trashedProblems.find(x => x.id === id);
-  if (p && p.notionId) { /* notion removed */ }
+  
   trashedProblems = trashedProblems.filter(x => x.id !== id);
   saveTrash();
   updateTrashBadge();
@@ -1907,7 +1936,9 @@ function permanentDelete(id) {
 function emptyTrash() {
   if (trashedProblems.length === 0) { showToast('휴지통이 비어있어요'); return; }
   if (!confirm(`휴지통의 ${trashedProblems.length}개 문제를 모두 완전 삭제할까요?`)) return;
-  trashedProblems.forEach(p => { /* notion removed */ });
+  trashedProblems.forEach(p => {
+    
+  });
   trashedProblems = [];
   saveTrash();
   updateTrashBadge();
@@ -1921,6 +1952,7 @@ function autoCleanTrash() {
   const before = trashedProblems.length;
   trashedProblems = trashedProblems.filter(p => {
     if (p.deletedAt && now - p.deletedAt > week) {
+      
       return false;
     }
     return true;
@@ -2557,6 +2589,7 @@ function saveProblem() {
     const idx = problems.findIndex(x => x.id === editingProblemId);
     if (idx !== -1) {
       p.id = editingProblemId;
+      
       problems[idx] = p;
     }
     editingProblemId = null;
@@ -2565,6 +2598,7 @@ function saveProblem() {
   } else {
     problems.push(p);
     showToast('문제가 저장됐어요 ✓');
+    
   }
   localStorage.setItem('problems', JSON.stringify(problems));
   saveStickyMeta(p);
@@ -2579,6 +2613,7 @@ function saveAndNext() {
     const idx = problems.findIndex(x => x.id === editingProblemId);
     if (idx !== -1) {
       p.id = editingProblemId;
+      
       problems[idx] = p;
     }
     editingProblemId = null;
@@ -2587,6 +2622,7 @@ function saveAndNext() {
   } else {
     // 새 문제 추가
     problems.push(p);
+    
     showToast('저장됨, 다음 문제를 입력하세요');
   }
   localStorage.setItem('problems', JSON.stringify(problems));
@@ -3154,14 +3190,10 @@ function exportNoteById(id) {
   setTimeout(() => window.print(), 500);
 }
 
-// ===== NOTION API =====
 // ===== 학습 일지 기록 =====
-const NOTION_API = 'https://api.anthropic.com/v1/messages';
-
 async function loadNotionStudents() {
   const sel = document.getElementById('notionStudent');
   if (!sel) return;
-  sel.innerHTML = '<option value="">불러오는 중...</option>';
   try {
     const res = await fetch('/.netlify/functions/notion', {
       method: 'POST',
@@ -3169,17 +3201,19 @@ async function loadNotionStudents() {
       body: JSON.stringify({ action: 'getStudents', data: {} }),
     });
     const data = await res.json();
-    sel.innerHTML = '<option value="">학생 선택...</option>';
-    if (data.success && data.students) {
+    if (data.success && data.students && data.students.length > 0) {
+      sel.innerHTML = '<option value="">학생 선택...</option>';
       data.students.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id;
-        opt.textContent = s.name;
+        opt.textContent = `${s.name}${s.grade ? ' · ' + s.grade : ''}`;
         sel.appendChild(opt);
       });
+    } else {
+      sel.innerHTML = '<option value="">학생 없음</option>';
     }
   } catch (e) {
-    sel.innerHTML = '<option value="">학생 목록 로드 실패</option>';
+    sel.innerHTML = '<option value="">불러오기 실패</option>';
     console.error(e);
   }
 }
@@ -3187,35 +3221,25 @@ async function loadNotionStudents() {
 async function sendToStudentJournal() {
   const sel = document.getElementById('notionStudent');
   const studentId = sel?.value;
-  const studentName = sel?.options[sel.selectedIndex]?.text;
+  const studentName = sel?.options[sel.selectedIndex]?.text?.split(' · ')[0];
   if (!studentId) { showToast('학생을 선택해주세요'); return; }
 
-  const title    = document.getElementById('noteTitle').value || '오답 노트';
-  const footer   = document.getElementById('noteFooter').value || '';
-  const cells    = noteCells.filter(Boolean);
-  const today    = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-  const subjects = [...new Set(cells.map(p => p.subject).filter(Boolean))].join(', ') || '수학';
-  const problemNums = cells.map(p => p.num ? `${p.num}번` : '').filter(Boolean).join(', ');
+  const title      = document.getElementById('noteTitle').value || '오답 노트';
+  const footer     = document.getElementById('noteFooter').value || '';
+  const cells      = noteCells.filter(Boolean);
+  const today      = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const subjects   = [...new Set(cells.map(p => p.subject).filter(Boolean))].join(', ') || '수학';
+  const books      = [...new Set(cells.map(p => p.book).filter(Boolean))].join(', ') || '';
+  const problemNums = cells.map(p => p.num ? `${String(p.num).padStart(3,'0')}` : '').filter(Boolean).join(', ');
 
   showToast('학습 일지에 기록 중...');
-
   try {
     const res = await fetch('/.netlify/functions/notion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'addJournalEntry',
-        data: {
-          studentId,
-          studentName,
-          noteTitle: title,
-          footer,
-          today,
-          subjects,
-          problemCount: cells.length,
-          problemNums,
-          books: [...new Set(cells.map(p => p.book).filter(Boolean))].join(', '),
-        }
+        data: { studentId, studentName, noteTitle: title, footer, today, subjects, problemCount: cells.length, problemNums, books },
       }),
     });
     const data = await res.json();
@@ -3223,6 +3247,7 @@ async function sendToStudentJournal() {
       showToast(`✓ ${studentName}의 학습 일지에 기록됐어요!`);
     } else {
       showToast('기록 중 오류가 발생했어요');
+      console.error(data.error);
     }
   } catch (e) {
     showToast('기록 중 오류가 발생했어요');
@@ -3451,6 +3476,7 @@ function saveCropItem(i) {
   };
   problems.push(p);
   localStorage.setItem('problems', JSON.stringify(problems));
+  
   showToast('DB에 추가됐어요 ✓');
   croppedItems.splice(i, 1);
   renderCropList();
@@ -3488,6 +3514,10 @@ loadStickyFooter();
 setupPasteZones();
 autoCleanTrash();
 updateTrashBadge();
+// 노션에서 문제 자동 로드 (배포 환경에서만)
+if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+  
+}
 
 </script>
 </body>

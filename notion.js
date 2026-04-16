@@ -2,10 +2,8 @@ const { Client } = require('@notionhq/client');
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
-// 학생 관리 DB
 const STUDENTS_DB = '2ee43f2a-920f-8035-80ee-000bdbcec5ea';
-// 학습 일지 DB
-const JOURNAL_DB = '2f543f2a-920f-80f3-9631-000b982f872d';
+const JOURNAL_DB  = '2f543f2a-920f-80f3-9631-000b982f872d';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -15,6 +13,7 @@ exports.handler = async (event) => {
   const { action, data } = JSON.parse(event.body || '{}');
 
   try {
+
     // 학생 목록 불러오기
     if (action === 'getStudents') {
       const res = await notion.databases.query({
@@ -23,16 +22,16 @@ exports.handler = async (event) => {
           or: [
             { property: '상태', status: { equals: '재원' } },
             { property: '상태', status: { equals: '개별 수업' } },
-          ]
+          ],
         },
         sorts: [{ property: '이름', direction: 'ascending' }],
       });
 
       const students = res.results.map(p => ({
-        id: p.id,
-        name: p.properties['이름']?.title?.[0]?.plain_text || '이름없음',
+        id:     p.id,
+        name:   p.properties['이름']?.title?.[0]?.plain_text || '이름없음',
+        grade:  p.properties['학년']?.select?.name || '',
         school: p.properties['학교']?.select?.name || '',
-        grade: p.properties['학년']?.select?.name || '',
       }));
 
       return {
@@ -48,7 +47,7 @@ exports.handler = async (event) => {
         today, subjects, problemCount, problemNums, books,
       } = data;
 
-      // 1. 해당 학생의 학습 일지 페이지 찾기
+      // 해당 학생의 학습 일지 페이지 찾기
       const journalRes = await notion.databases.query({
         database_id: JOURNAL_DB,
         filter: {
@@ -62,60 +61,51 @@ exports.handler = async (event) => {
       let journalPageId;
 
       if (journalRes.results.length > 0) {
-        // 기존 학습 일지 페이지에 기록 추가
         journalPageId = journalRes.results[0].id;
       } else {
-        // 학습 일지 페이지가 없으면 새로 생성
         const newPage = await notion.pages.create({
           parent: { database_id: JOURNAL_DB },
           properties: {
-            '이름': { title: [{ text: { content: `${studentName} 학습 일지` } }] },
+            '이름':     { title:    [{ text: { content: `${studentName} 학습 일지` } }] },
             '학생 관리': { relation: [{ id: studentId }] },
           },
         });
         journalPageId = newPage.id;
       }
 
-      // 2. 학습 일지 페이지에 오답노트 기록 블록 추가
+      const blocks = [
+        { type: 'divider', divider: {} },
+        {
+          type: 'heading_3',
+          heading_3: {
+            rich_text: [{ text: { content: `📝 ${today} — ${noteTitle}` } }],
+            color: 'blue_background',
+          },
+        },
+        {
+          type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [{ text: { content: `과목: ${subjects}` } }] },
+        },
+        {
+          type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [{ text: { content: `교재: ${books || '—'}` } }] },
+        },
+        {
+          type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [{ text: { content: `문제 수: ${problemCount}문제` } }] },
+        },
+      ];
+
+      if (problemNums) {
+        blocks.push({
+          type: 'bulleted_list_item',
+          bulleted_list_item: { rich_text: [{ text: { content: `문제 번호: ${problemNums}` } }] },
+        });
+      }
+
       await notion.blocks.children.append({
         block_id: journalPageId,
-        children: [
-          {
-            type: 'divider',
-            divider: {},
-          },
-          {
-            type: 'heading_3',
-            heading_3: {
-              rich_text: [{ text: { content: `📝 ${today} — ${noteTitle}` } }],
-              color: 'blue_background',
-            },
-          },
-          {
-            type: 'bulleted_list_item',
-            bulleted_list_item: {
-              rich_text: [{ text: { content: `과목: ${subjects}` } }],
-            },
-          },
-          {
-            type: 'bulleted_list_item',
-            bulleted_list_item: {
-              rich_text: [{ text: { content: `교재: ${books || '—'}` } }],
-            },
-          },
-          {
-            type: 'bulleted_list_item',
-            bulleted_list_item: {
-              rich_text: [{ text: { content: `문제 수: ${problemCount}문제` } }],
-            },
-          },
-          ...(problemNums ? [{
-            type: 'bulleted_list_item',
-            bulleted_list_item: {
-              rich_text: [{ text: { content: `문제 번호: ${problemNums}` } }],
-            },
-          }] : []),
-        ],
+        children: blocks,
       });
 
       return {
