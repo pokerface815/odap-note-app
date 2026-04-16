@@ -653,6 +653,18 @@
     text-align: left;
     border-bottom: 2px solid var(--border);
     padding-bottom: 12px;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  /* 해설 그리드 화면 미리보기용 */
+  #explanationGrid {
+    column-count: 2;
+    column-gap: 16px;
+    column-rule: 1px solid var(--border);
+  }
+  #explanationGrid > div {
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
   }
   .answer-grid {
     display: grid;
@@ -670,6 +682,8 @@
     border-bottom: 1px solid var(--border);
     border-right: 1px solid var(--border);
     min-height: 40px;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
   }
   .answer-item.right-col { border-right: none; }
   .answer-num { display: none; }
@@ -769,7 +783,7 @@
       break-before: page;
     }
 
-    /* 정답 페이지 - 기본은 새 페이지 시작 (빈 페이지 없을 때) */
+    /* 정답/해설 페이지 - a4-page와 동일한 방식 */
     .answer-sheet {
       width: 210mm;
       height: 297mm;
@@ -781,9 +795,39 @@
       page-break-before: always;
       break-before: page;
       box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+    }
+    /* h3 제목과 본문이 반드시 같은 페이지에 */
+    .answer-sheet h3 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    #answerGrid, #explanationGrid {
+      break-before: avoid;
+      page-break-before: avoid;
+    }
+    /* 페이지 번호: 각 answer-sheet 하단 중앙에 절대 고정 */
+    #answerPageNumber, #explanationPageNumber {
+      position: absolute;
+      bottom: 8mm;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+    }
+    /* 해설 column */
+    #explanationGrid {
+      column-count: 2;
+      column-gap: 16px;
+      column-rule: 1px solid #e0e0e0;
+    }
+    #explanationGrid > div {
+      break-inside: avoid;
+      -webkit-column-break-inside: avoid;
     }
 
-    /* 빈 페이지: 새 페이지로 시작, 뒤에는 페이지 나누기 없음 */
+    /* 빈 페이지: 새 페이지로 시작 */
     .blank-page {
       width: 210mm;
       height: 297mm;
@@ -1162,6 +1206,13 @@
               <div class="answer-grid" id="answerGrid"></div>
               <div class="page-number" id="answerPageNumber" style="margin-top:12px;"></div>
             </div>
+
+            <!-- Explanation sheet preview -->
+            <div class="answer-sheet" id="explanationSheet" style="display:none;">
+              <h3 id="explanationTitle">해 설</h3>
+              <div id="explanationGrid"></div>
+              <div class="page-number" id="explanationPageNumber" style="margin-top:12px;"></div>
+            </div>
           </div>
 
           <!-- Panel -->
@@ -1183,6 +1234,13 @@
               <div class="form-group">
                 <label class="form-label">페이지 레이아웃</label>
                 <div style="font-size:12px;color:var(--text3);">문제 크기에 따라 자동으로 조정됩니다</div>
+              </div>
+              <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                  <input type="checkbox" id="includeExplanation" onchange="toggleExplanation()" style="width:16px;height:16px;accent-color:var(--accent);">
+                  해설 페이지 포함
+                </label>
+                <div style="font-size:11px;color:var(--text3);margin-top:4px;">해설이 있는 문제의 해설을 정답 뒤에 추가합니다</div>
               </div>
               <div class="form-group">
                 <label class="form-label">노션으로 전송</label>
@@ -1579,13 +1637,10 @@
           <div id="pe_aPreview"></div>
         </div>
         <div class="upload-section">
-          <div class="upload-section-label">💡 해설 이미지 교체</div>
-          <div class="upload-zone paste-zone" id="pe_sZone" onclick="triggerUpload('pe_s_img')" tabindex="0" style="outline:none;">
-            <div class="icon">🖼️</div>
-            <p>클릭 또는 마우스 올리고 <strong>Cmd+V</strong></p>
-          </div>
-          <input type="file" id="pe_s_img" accept="image/*" style="display:none" onchange="pePreviewUpload('s',this)">
-          <div id="pe_sPreview"></div>
+          <div class="upload-section-label">💡 해설 이미지 (여러 장 가능)</div>
+          <div id="pe_sSlots"></div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="document.getElementById('pe_s_img_extra').click()" id="pe_addSolBtn">+ 해설 이미지 추가</button>
+          <input type="file" id="pe_s_img_extra" accept="image/*" style="display:none" onchange="peAddSolSlot(this)">
         </div>
       </div>
     </div>
@@ -2015,7 +2070,7 @@ function openPreviewModal(id) {
   const p = problems.find(x => x.id === id);
   if (!p) return;
   previewEditId = id;
-  previewEditImages = { q: null, a: null, s: null };
+  previewEditImages = { q: null, a: null, sArr: [] };
   document.getElementById('previewModal').classList.add('open');
   switchPreviewTab('preview');
   fillPreviewView(p);
@@ -2075,31 +2130,44 @@ function fillEditView(p) {
     ? `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${p.aImg}" style="max-height:80px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="peClearImg('a')">×</div></div>` : '';
   document.getElementById('pe_qZone').style.display = p.qImg ? 'none' : 'block';
   document.getElementById('pe_aZone').style.display = p.aImg ? 'none' : 'block';
-  // 해설
-  const sImg = (p.sImgs && p.sImgs[0]) || p.sImg || null;
-  document.getElementById('pe_sPreview').innerHTML = sImg
-    ? `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${sImg}" style="max-height:80px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="peClearImg('s')">×</div></div>` : '';
-  document.getElementById('pe_sZone').style.display = sImg ? 'none' : 'block';
+  // 해설 슬롯 초기화
+  const existingImgs = p.sImgs && p.sImgs.length ? p.sImgs : (p.sImg ? [p.sImg] : []);
+  previewEditImages.sArr = [...existingImgs];
+  peRenderSolSlots();
 }
 
-function pePreviewUpload(type, input) {
-  const file = input.files[0];
-  if (!file) return;
+function peRenderSolSlots() {
+  const container = document.getElementById('pe_sSlots');
+  const arr = previewEditImages.sArr;
+  container.innerHTML = arr.map((src, i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <img src="${src}" style="max-height:60px;border-radius:var(--radius);border:1px solid var(--border);">
+      <button class="btn btn-secondary btn-sm" onclick="peRemoveSolSlot(${i})">× 삭제</button>
+    </div>
+  `).join('');
+  // 빈 슬롯 (새 이미지 추가용)
+  container.innerHTML += `
+    <div class="upload-zone paste-zone" id="pe_sZone" onclick="triggerUpload('pe_s_img')" tabindex="0" style="outline:none;margin-top:4px;">
+      <div class="icon">🖼️</div>
+      <p>클릭 또는 마우스 올리고 <strong>Cmd+V</strong></p>
+    </div>
+    <input type="file" id="pe_s_img" accept="image/*" style="display:none" onchange="peAddSolSlot(this)">
+  `;
+}
+
+function peAddSolSlot(input) {
+  if (!input || !input.files || !input.files[0]) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const src = e.target.result;
-    previewEditImages[type] = src;
-    document.getElementById(`pe_${type}Preview`).innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:80px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="peClearImg('${type}')">×</div></div>`;
-    const zoneEl = document.getElementById(`pe_${type}Zone`);
-    if (zoneEl) zoneEl.style.display = 'none';
+    previewEditImages.sArr.push(e.target.result);
+    peRenderSolSlots();
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(input.files[0]);
 }
 
-function peClearImg(type) {
-  previewEditImages[type] = null;
-  document.getElementById(`pe_${type}Preview`).innerHTML = '';
-  document.getElementById(`pe_${type}Zone`).style.display = 'block';
+function peRemoveSolSlot(i) {
+  previewEditImages.sArr.splice(i, 1);
+  peRenderSolSlots();
 }
 
 function savePreviewEdit() {
@@ -2116,14 +2184,35 @@ function savePreviewEdit() {
   p.size    = document.getElementById('pe_size').value;
   if (previewEditImages.q) p.qImg = previewEditImages.q;
   if (previewEditImages.a) p.aImg = previewEditImages.a;
-  if (previewEditImages.s) {
-    p.sImgs = [previewEditImages.s];
-    p.sImg = previewEditImages.s;
+  if (previewEditImages.sArr.length > 0) {
+    p.sImgs = [...previewEditImages.sArr];
+    p.sImg  = p.sImgs[0];
   }
   localStorage.setItem('problems', JSON.stringify(problems));
   closePreviewModal();
   filterProblems();
   showToast('문제가 수정됐어요 ✓');
+}
+
+function pePreviewUpload(type, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const src = e.target.result;
+    previewEditImages[type] = src;
+    const previewEl = document.getElementById(`pe_${type}Preview`);
+    if (previewEl) previewEl.innerHTML = `<div class="uploaded-preview" style="display:block;margin-top:8px;"><img src="${src}" style="max-height:80px;border-radius:var(--radius);border:1px solid var(--border);"><div class="remove-btn" onclick="peClearImg('${type}')">×</div></div>`;
+    const zoneEl = document.getElementById(`pe_${type}Zone`);
+    if (zoneEl) zoneEl.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function peClearImg(type) {
+  previewEditImages[type] = null;
+  if (document.getElementById(`pe_${type}Preview`)) document.getElementById(`pe_${type}Preview`).innerHTML = '';
+  if (document.getElementById(`pe_${type}Zone`)) document.getElementById(`pe_${type}Zone`).style.display = 'block';
 }
 
 const comboFieldMap = {
@@ -2673,6 +2762,11 @@ function renderEditorCells() {
   const a4Page = document.getElementById('a4Page');
   const noteTitle = document.getElementById('noteTitle').value;
   const noteFooter = document.getElementById('noteFooter').value;
+  const needBlank = (pages.length % 2 === 1);
+  const answerPageNum = pages.length + (needBlank ? 2 : 1);
+  const hasExplanation = document.getElementById('includeExplanation')?.checked &&
+    noteCells.some(p => (p.sImgs && p.sImgs.length > 0) || p.sImg);
+  const totalPageCount = answerPageNum + (hasExplanation ? 1 : 0);
 
   // 기존 추가 페이지 제거
   previewArea.querySelectorAll('.a4-page-extra').forEach(el => el.remove());
@@ -2683,7 +2777,7 @@ function renderEditorCells() {
   renderPageItems(firstGrid, pages[0]?.items || [], 0);
   // 첫 페이지 번호 업데이트
   const pn1 = document.getElementById('pageNumber1');
-  if (pn1) pn1.textContent = `— 1 —`;
+  if (pn1) pn1.textContent = `— 1 / ${totalPageCount} —`;
 
   // 추가 페이지 생성 (제목 없이)
   for (let pi = 1; pi < pages.length; pi++) {
@@ -2693,14 +2787,14 @@ function renderEditorCells() {
     extraPage.innerHTML = `
       <div class="problems-grid" id="problemsGrid_${pi}"></div>
       <input class="page-footer-input" value="${noteFooter}" placeholder="" readonly>
-      <div class="page-number">— ${pi + 1} —</div>
+      <div class="page-number">— ${pi + 1} / ${totalPageCount} —</div>
     `;
     previewArea.appendChild(extraPage);
     renderPageItems(extraPage.querySelector(`#problemsGrid_${pi}`), pages[pi].items, pi);
   }
 
   // pages.length를 직접 넘겨서 정확하게 홀수/짝수 판단
-  renderAnswerSheet(pages.length, noteTitle);
+  renderAnswerSheet(pages.length, noteTitle, totalPageCount);
 }
 
 function renderPageItems(gridEl, items, pageIdx) {
@@ -2815,7 +2909,7 @@ function sortCellsByNum() {
   showToast('🔢 문제 번호 순서로 정렬했어요');
 }
 
-function renderAnswerSheet(totalProblemPages, noteTitle) {
+function renderAnswerSheet(totalProblemPages, noteTitle, totalPageCount) {
   const grid = document.getElementById('answerGrid');
   if (noteCells.length === 0) {
     grid.innerHTML = '';
@@ -2837,16 +2931,17 @@ function renderAnswerSheet(totalProblemPages, noteTitle) {
   const answerSheet = document.getElementById('answerSheet');
   const needBlank = (totalProblemPages % 2 === 1);
   blankPage.style.display = needBlank ? 'flex' : 'none';
-  // 빈 페이지가 있으면: blank-page가 새 페이지 시작 → answer-sheet는 그냥 이어서
-  // 빈 페이지 없으면: answer-sheet가 직접 새 페이지 시작 (CSS page-break-before:always)
   answerSheet.style.pageBreakBefore = needBlank ? 'auto' : 'always';
   answerSheet.style.breakBefore = needBlank ? 'auto' : 'page';
 
-  // 정답 페이지 번호: 문제페이지 + (빈페이지 있으면 1) + 1
-  const needBlankForNum = (totalProblemPages % 2 === 1);
-  const answerPageNum = totalProblemPages + (needBlankForNum ? 2 : 1);
+  // 전체 페이지 수 계산
+  const hasExplanation = document.getElementById('includeExplanation')?.checked &&
+    noteCells.some(p => (p.sImgs && p.sImgs.length > 0) || p.sImg);
+  const answerPageNum = totalProblemPages + (needBlank ? 2 : 1);
+  const totalPages = answerPageNum + (hasExplanation ? 1 : 0);
+
   const answerPageNumEl = document.getElementById('answerPageNumber');
-  if (answerPageNumEl) answerPageNumEl.textContent = `— ${answerPageNum} —`;
+  if (answerPageNumEl) answerPageNumEl.textContent = `— ${answerPageNum} / ${totalPageCount || answerPageNum} —`;
 
   // 정답 페이지 제목: "오답노트 제목_정답"
   const answerTitle = noteTitle ? `${noteTitle}_정답` : '정 답';
@@ -2882,6 +2977,75 @@ function renderAnswerSheet(totalProblemPages, noteTitle) {
   grid.style.gridAutoFlow = '';
   grid.style.gridTemplateRows = '';
   grid.innerHTML = html;
+
+  // 해설 페이지
+  renderExplanationSheet(totalProblemPages, answerPageNum, noteTitle);
+}
+
+function toggleExplanation() {
+  const pages = layoutPages(noteCells);
+  const noteTitle = document.getElementById('noteTitle').value;
+  const needBlank = (pages.length % 2 === 1);
+  const answerPageNum = pages.length + (needBlank ? 2 : 1);
+  renderExplanationSheet(pages.length, answerPageNum, noteTitle);
+}
+
+function renderExplanationSheet(totalProblemPages, answerPageNum, noteTitle) {
+  const sheet = document.getElementById('explanationSheet');
+  const grid  = document.getElementById('explanationGrid');
+  const checkbox = document.getElementById('includeExplanation');
+  const include = checkbox ? checkbox.checked : false;
+
+  if (!include) { sheet.style.display = 'none'; return; }
+
+  // 해설 있는 문제만
+  const withSol = noteCells.filter(p =>
+    (p.sImgs && p.sImgs.length > 0) || p.sImg
+  );
+  if (withSol.length === 0) { sheet.style.display = 'none'; return; }
+
+  sheet.style.display = 'block';
+  sheet.style.pageBreakBefore = 'always';
+  sheet.style.breakBefore = 'page';
+
+  // 제목
+  const expTitle = noteTitle ? `${noteTitle}_해설` : '해 설';
+  document.getElementById('explanationTitle').textContent = expTitle;
+
+  // 페이지 번호
+  const expPageNum = (answerPageNum || 0) + 1;
+  // 전체 페이지 수 (해설이 마지막)
+  const expTotalPages = expPageNum;
+  document.getElementById('explanationPageNumber').textContent = `— ${expPageNum} / ${expTotalPages} —`;
+
+  // CSS column은 print CSS에서 처리 (JS에서 중복 설정 제거)
+  grid.style.display = '';
+  grid.style.columnCount = '';
+  grid.style.columnGap = '';
+  grid.style.columnRule = '';
+  grid.style.border = '';
+  grid.style.borderRadius = '';
+  grid.style.overflow = '';
+  grid.style.gridTemplateColumns = '';
+
+  grid.innerHTML = withSol.map(p => {
+    const imgs = (p.sImgs && p.sImgs.length) ? p.sImgs : (p.sImg ? [p.sImg] : []);
+    return `
+      <div style="
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        page-break-inside: avoid;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      ">
+        ${imgs.map(src => `<img src="${src}" style="max-width:100%;height:auto;object-fit:contain;object-position:left top;display:block;">`).join('')}
+      </div>
+    `;
+  }).join('');
 }
 
 // ===== PROBLEM PICKER =====
@@ -3159,10 +3323,9 @@ function setupPasteZones() {
             return;
           }
           if (zoneId === 'pe_sZone') {
-            previewEditImages.s = src;
-            document.getElementById('pe_sPreview').innerHTML = makePreviewHtml(src, `peClearImg('s')`);
-            document.getElementById('pe_sZone').style.display = 'none';
-            showToast('💡 해설 이미지 교체 ✓');
+            previewEditImages.sArr.push(src);
+            peRenderSolSlots();
+            showToast('💡 해설 이미지 추가 ✓');
             return;
           }
         }
